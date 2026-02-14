@@ -8,12 +8,8 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
 import { Switch } from '../ui/switch';
 import { Search } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -35,10 +31,7 @@ const ServerMemberManager = ({ guild }) => {
     setLoading(true);
     setError('');
 
-    Promise.all([
-      api.get(`/guilds/${guild.id}/members/`),
-      api.get(`/guilds/${guild.id}/roles`),
-    ])
+    Promise.all([api.get(`/guilds/${guild.id}/members/`), api.get(`/guilds/${guild.id}/roles`)])
       .then(([membersResponse, rolesResponse]) => {
         if (!active) return;
 
@@ -62,7 +55,8 @@ const ServerMemberManager = ({ guild }) => {
       })
       .catch((err) => {
         if (!active) return;
-        const msg = err.response?.data?.message || err.message || 'Could not load members or roles.';
+        const msg =
+          err.response?.data?.message || err.message || 'Could not load members or roles.';
         setError(msg);
       })
       .finally(() => {
@@ -97,9 +91,7 @@ const ServerMemberManager = ({ guild }) => {
   const filteredMembers = useMemo(() => {
     if (!searchQuery.trim()) return memberOptions;
     const query = searchQuery.toLowerCase();
-    return memberOptions.filter((member) =>
-      member.name.toLowerCase().includes(query)
-    );
+    return memberOptions.filter((member) => member.name.toLowerCase().includes(query));
   }, [memberOptions, searchQuery]);
 
   const totalPages = Math.ceil(filteredMembers.length / ITEMS_PER_PAGE);
@@ -153,13 +145,17 @@ const ServerMemberManager = ({ guild }) => {
 
         {/* Search Bar */}
         <div className="relative w-full sm:w-80">
-          <Input
-            type="text"
-            placeholder="Search members"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+          <InputGroup>
+            <InputGroupInput
+              type="text"
+              placeholder="Search members"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <InputGroupAddon>
+              <Search className="size-4 text-muted-foreground" />
+            </InputGroupAddon>
+          </InputGroup>
         </div>
       </div>
 
@@ -173,8 +169,8 @@ const ServerMemberManager = ({ guild }) => {
       {!loading && (
         <>
           {/* Members Table */}
-          <div className="rounded-md border border-border overflow-hidden">
-            <div className="overflow-auto max-h-[calc(100vh-20rem)]">
+          <div className="overflow-hidden rounded-md border border-border">
+            <div className="max-h-[calc(100vh-20rem)] overflow-auto">
               <table className="w-full">
                 <thead className="border-b border-border bg-muted/30">
                   <tr>
@@ -195,8 +191,13 @@ const ServerMemberManager = ({ guild }) => {
                 <tbody className="divide-y divide-border">
                   {paginatedMembers.length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="px-4 py-12 text-center text-sm text-muted-foreground">
-                        {searchQuery ? 'No members found matching your search.' : 'No members found.'}
+                      <td
+                        colSpan="4"
+                        className="px-4 py-12 text-center text-sm text-muted-foreground"
+                      >
+                        {searchQuery
+                          ? 'No members found matching your search.'
+                          : 'No members found.'}
                       </td>
                     </tr>
                   ) : (
@@ -206,7 +207,7 @@ const ServerMemberManager = ({ guild }) => {
                         assignedRoles.has(role.id)
                       );
                       return (
-                        <tr key={member.id} className="hover:bg-muted/20 transition-colors">
+                        <tr key={member.id} className="transition-colors hover:bg-muted/20">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-sm font-semibold">
@@ -259,8 +260,9 @@ const ServerMemberManager = ({ guild }) => {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-sm text-muted-foreground text-center sm:text-left">
-                Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, filteredMembers.length)} of{' '}
+              <div className="text-center text-sm text-muted-foreground sm:text-left">
+                Showing {startIndex + 1} to{' '}
+                {Math.min(startIndex + ITEMS_PER_PAGE, filteredMembers.length)} of{' '}
                 {filteredMembers.length} members
               </div>
               <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
@@ -273,7 +275,7 @@ const ServerMemberManager = ({ guild }) => {
                 >
                   Previous
                 </Button>
-                <div className="flex items-center gap-1 overflow-x-auto max-w-full">
+                <div className="flex max-w-full items-center gap-1 overflow-x-auto">
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
                     if (
                       page === 1 ||
@@ -294,7 +296,7 @@ const ServerMemberManager = ({ guild }) => {
                       );
                     } else if (page === currentPage - 2 || page === currentPage + 2) {
                       return (
-                        <span key={page} className="px-2 text-muted-foreground shrink-0">
+                        <span key={page} className="shrink-0 px-2 text-muted-foreground">
                           ...
                         </span>
                       );
@@ -351,18 +353,10 @@ const ServerMemberManager = ({ guild }) => {
             </div>
             <Separator />
             <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setEditingMemberId(null)}
-              >
+              <Button type="button" variant="ghost" onClick={() => setEditingMemberId(null)}>
                 Cancel
               </Button>
-              <Button
-                type="button"
-                onClick={() => handleSave(editingMemberId)}
-                disabled={saving}
-              >
+              <Button type="button" onClick={() => handleSave(editingMemberId)} disabled={saving}>
                 {saving ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>

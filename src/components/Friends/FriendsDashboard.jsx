@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { Users, X } from 'lucide-react';
+import { Users, X, Search } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { InputGroup, InputGroupInput, InputGroupAddon } from '@/components/ui/input-group';
 import { useFriendsStore } from '@/store/friends.store';
 import useStore from '@/hooks/useStore';
 import AddFriendForm from './AddFriendForm';
@@ -70,25 +71,32 @@ const FriendsDashboard = () => {
         {(activeTab === 'online' || activeTab === 'all') && (
           <>
             <div className="mb-4">
-              <div className="relative">
-                <input
+              <InputGroup className="border-white/5 bg-[#17171a]">
+                <InputGroupAddon>
+                  <Search size={16} className="text-white" />
+                </InputGroupAddon>
+                <InputGroupInput
                   type="text"
                   placeholder="Search friends..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="border-white/5/60 w-full rounded-lg border bg-gray-800/50 px-4 py-2.5 text-sm text-white transition-all placeholder:text-gray-500 focus:border-white/5 focus:bg-gray-800/80 focus:outline-none focus:ring-0"
+                  className="text-white placeholder:text-gray-500"
                 />
                 {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 transform text-gray-500 transition-colors hover:text-gray-300"
-                    type="button"
-                    aria-label="Clear search"
-                  >
-                    <X size={16} />
-                  </button>
+                  <InputGroupAddon>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setSearchQuery('')}
+                      className="h-6 w-6 text-gray-500 hover:bg-transparent hover:text-gray-300"
+                      type="button"
+                      aria-label="Clear search"
+                    >
+                      <X size={16} />
+                    </Button>
+                  </InputGroupAddon>
                 )}
-              </div>
+              </InputGroup>
             </div>
             <div className="flex-1 overflow-y-auto">
               <FriendsList friends={filteredFriends} filter={activeTab} />
