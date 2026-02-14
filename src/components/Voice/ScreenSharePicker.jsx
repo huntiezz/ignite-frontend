@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Monitor, AppWindow, X, ArrowsClockwise } from '@phosphor-icons/react';
 import { useVoiceStore } from '@/store/voice.store';
 import { VoiceService } from '@/services/voice.service';
@@ -38,6 +39,9 @@ const ScreenSharePicker = () => {
     if (isOpen) {
       fetchSources();
       setSelectedSource(null);
+
+      const interval = setInterval(fetchSources, 2000);
+      return () => clearInterval(interval);
     }
   }, [isOpen, fetchSources]);
 
@@ -59,7 +63,7 @@ const ScreenSharePicker = () => {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-gray-800 shadow-2xl">
         {/* Header */}
@@ -187,7 +191,8 @@ const ScreenSharePicker = () => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
