@@ -7,14 +7,13 @@ import { GuildsService } from '@/services/guilds.service';
 import { PermissionsService } from '@/services/permissions.service';
 import { Permissions } from '@/enums/Permissions';
 import { CaretDown, Gear, UserPlus, SignOut } from '@phosphor-icons/react';
+import InviteDialog from './InviteDialog';
 
 const GuildSidebarHeader = ({ guildName = '', guild, onOpenServerSettings }) => {
     const navigate = useNavigate();
 
     const [menuOpen, setMenuOpen] = useState(false);
-    const [inviteInfo, setInviteInfo] = useState(null);
-    const [loadingInvite, setLoadingInvite] = useState(false);
-    const [error, setError] = useState(null);
+    const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
     const [leaving, setLeaving] = useState(false);
 
     const containerRef = useRef(null);
@@ -44,45 +43,21 @@ const GuildSidebarHeader = ({ guildName = '', guild, onOpenServerSettings }) => 
         return PermissionsService.hasPermission(guild?.id, null, Permissions.CREATE_INSTANT_INVITE)
     }, [guild?.id]);
 
-    const handleInvite = useCallback(
-        async (e) => {
-            e.stopPropagation();
-            if (!guild?.id || loadingInvite) return;
-            setLoadingInvite(true);
-            setError(null);
-            try {
-                const res = await api.post(`guilds/${guild.id}/invites`);
-                setInviteInfo(res.data);
-                toast.success('Invite created.');
-            } catch (err) {
-                const msg = err.response?.data?.message || err.message || 'Unknown error';
-                setError(msg);
-                toast.error(msg);
-            } finally {
-                setLoadingInvite(false);
-            }
-        },
-        [guild?.id, loadingInvite]
-    );
-
     const handleLeave = useCallback(
         async (e) => {
             e.stopPropagation();
             if (!guild?.id || leaving) return;
 
             setLeaving(true);
-            setError(null);
 
             try {
                 await api.delete(`@me/guilds/${guild.id}/`);
                 toast.success('Left server.');
                 setMenuOpen(false);
-                setInviteInfo(null);
                 navigate('/channels/@me');
                 await GuildsService.loadGuilds();
             } catch (err) {
                 const msg = err.response?.data?.message || err.message || 'Unknown error';
-                setError(msg);
                 toast.error(msg);
             } finally {
                 setLeaving(false);
@@ -90,16 +65,6 @@ const GuildSidebarHeader = ({ guildName = '', guild, onOpenServerSettings }) => 
         },
         [guild?.id, leaving, navigate]
     );
-
-    const handleCopyInvite = useCallback(async () => {
-        if (!inviteInfo?.code) return;
-        try {
-            await navigator.clipboard.writeText('https://app.ignite-chat.com/invite/' + inviteInfo.code);
-            toast.success('Copied invite code.');
-        } catch {
-            toast.error('Could not copy to clipboard.');
-        }
-    }, [inviteInfo?.code]);
 
     return (
         <div className="relative w-full" ref={containerRef}>
@@ -119,11 +84,14 @@ const GuildSidebarHeader = ({ guildName = '', guild, onOpenServerSettings }) => 
                     {canInvite && (<>
                         <button
                             type="button"
-                            className="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-gray-100 hover:bg-gray-600 disabled:opacity-60"
-                            onClick={handleInvite}
-                            disabled={loadingInvite}
+                            className="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-gray-100 hover:bg-gray-600"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setMenuOpen(false);
+                                setInviteDialogOpen(true);
+                            }}
                         >
-                            <span>{loadingInvite ? 'Creating Invite…' : 'Invite People'}</span>
+                            <span>Invite People</span>
                             <UserPlus className="size-4 ml-2" />
                         </button>
 
@@ -160,46 +128,11 @@ const GuildSidebarHeader = ({ guildName = '', guild, onOpenServerSettings }) => 
                 </div>
             )}
 
-            {inviteInfo && (
-                <div className="absolute inset-x-2 top-28 z-20 rounded border border-gray-700 bg-gray-800 p-4 shadow-lg">
-                    <div className="mb-2 text-sm font-semibold text-gray-100">Invite Created</div>
-                    <div className="mb-2 flex items-center gap-2">
-                        <span className="break-all font-mono text-xs text-gray-300">{inviteInfo.code}</span>
-                        <button
-                            type="button"
-                            className="rounded border border-gray-600 bg-gray-700 px-2 py-1 text-xs text-gray-100 hover:bg-gray-600"
-                            onClick={handleCopyInvite}
-                        >
-                            Copy
-                        </button>
-                    </div>
-                    <div className="flex justify-end">
-                        <button
-                            type="button"
-                            className="rounded bg-gray-700 px-3 py-1 text-xs text-gray-100 hover:bg-gray-600"
-                            onClick={() => setInviteInfo(null)}
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {error && !inviteInfo && (
-                <div className="absolute inset-x-2 top-28 z-20 rounded border border-red-700 bg-red-800 p-4 shadow-lg">
-                    <div className="mb-2 text-sm font-semibold text-red-100">Error</div>
-                    <div className="mb-2 break-all text-xs text-red-200">{error}</div>
-                    <div className="flex justify-end">
-                        <button
-                            type="button"
-                            className="rounded bg-red-700 px-3 py-1 text-xs text-red-100 hover:bg-red-600"
-                            onClick={() => setError(null)}
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
-            )}
+            <InviteDialog
+                open={inviteDialogOpen}
+                onOpenChange={setInviteDialogOpen}
+                guildId={guild?.id}
+            />
         </div>
     );
 };
