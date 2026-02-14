@@ -6,30 +6,31 @@ import api from '@/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const EXPIRE_OPTIONS = [
-    { label: '30 minutes', value: 1800 },
-    { label: '1 hour', value: 3600 },
-    { label: '6 hours', value: 21600 },
-    { label: '12 hours', value: 43200 },
-    { label: '1 day', value: 86400 },
-    { label: '7 days', value: 604800 },
-    { label: 'Never', value: 0 },
+    { label: '30 minutes', value: '1800' },
+    { label: '1 hour', value: '3600' },
+    { label: '6 hours', value: '21600' },
+    { label: '12 hours', value: '43200' },
+    { label: '1 day', value: '86400' },
+    { label: '7 days', value: '604800' },
+    { label: 'Never', value: '0' },
 ];
 
 const MAX_USES_OPTIONS = [
-    { label: 'No limit', value: 0 },
-    { label: '1 use', value: 1 },
-    { label: '5 uses', value: 5 },
-    { label: '10 uses', value: 10 },
-    { label: '25 uses', value: 25 },
-    { label: '50 uses', value: 50 },
-    { label: '100 uses', value: 100 },
+    { label: 'No limit', value: '0' },
+    { label: '1 use', value: '1' },
+    { label: '5 uses', value: '5' },
+    { label: '10 uses', value: '10' },
+    { label: '25 uses', value: '25' },
+    { label: '50 uses', value: '50' },
+    { label: '100 uses', value: '100' },
 ];
 
 const InviteDialog = ({ open, onOpenChange, guildId }) => {
-    const [maxAge, setMaxAge] = useState(86400);
-    const [maxUses, setMaxUses] = useState(0);
+    const [maxAge, setMaxAge] = useState('86400');
+    const [maxUses, setMaxUses] = useState('0');
     const [loading, setLoading] = useState(false);
     const [inviteCode, setInviteCode] = useState(null);
 
@@ -38,8 +39,8 @@ const InviteDialog = ({ open, onOpenChange, guildId }) => {
         setLoading(true);
         try {
             const res = await api.post(`guilds/${guildId}/invites`, {
-                max_age: maxAge,
-                max_uses: maxUses,
+                max_age: Number(maxAge),
+                max_uses: Number(maxUses),
             });
             setInviteCode(res.data.code);
             toast.success('Invite created.');
@@ -65,13 +66,10 @@ const InviteDialog = ({ open, onOpenChange, guildId }) => {
         onOpenChange(value);
         if (!value) {
             setInviteCode(null);
-            setMaxAge(86400);
-            setMaxUses(0);
+            setMaxAge('86400');
+            setMaxUses('0');
         }
     };
-
-    const selectClass =
-        'w-full rounded-md border border-input bg-secondary/40 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring';
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
@@ -86,37 +84,39 @@ const InviteDialog = ({ open, onOpenChange, guildId }) => {
                 {!inviteCode ? (
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase text-muted-foreground">
+                            <Label className="text-sm font-semibold text-muted-foreground">
                                 Expire After
                             </Label>
-                            <select
-                                className={selectClass}
-                                value={maxAge}
-                                onChange={(e) => setMaxAge(Number(e.target.value))}
-                            >
-                                {EXPIRE_OPTIONS.map((opt) => (
-                                    <option key={opt.value} value={opt.value}>
-                                        {opt.label}
-                                    </option>
-                                ))}
-                            </select>
+                            <Select value={maxAge} onValueChange={setMaxAge}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {EXPIRE_OPTIONS.map((opt) => (
+                                        <SelectItem key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase text-muted-foreground">
+                            <Label className="text-sm font-semibold text-muted-foreground">
                                 Max Number of Uses
                             </Label>
-                            <select
-                                className={selectClass}
-                                value={maxUses}
-                                onChange={(e) => setMaxUses(Number(e.target.value))}
-                            >
-                                {MAX_USES_OPTIONS.map((opt) => (
-                                    <option key={opt.value} value={opt.value}>
-                                        {opt.label}
-                                    </option>
-                                ))}
-                            </select>
+                            <Select value={maxUses} onValueChange={setMaxUses}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {MAX_USES_OPTIONS.map((opt) => (
+                                        <SelectItem key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <DialogFooter>
@@ -132,11 +132,11 @@ const InviteDialog = ({ open, onOpenChange, guildId }) => {
                 ) : (
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase text-muted-foreground">
+                            <Label className="text-sm font-semibold text-muted-foreground">
                                 Your Invite Link
                             </Label>
                             <div className="flex items-center gap-2">
-                                <div className="flex-1 rounded-md bg-secondary/40 px-3 py-2 font-mono text-sm text-foreground select-all break-all">
+                                <div className="flex-1 select-all break-all rounded-md bg-secondary/40 px-3 py-2 font-mono text-sm text-foreground">
                                     https://app.ignite-chat.com/invite/{inviteCode}
                                 </div>
                                 <Button size="sm" variant="secondary" onClick={handleCopy}>
