@@ -211,13 +211,87 @@ export const VoiceService = {
 
     if (!room) return;
 
+    // If already sharing, stop it
+    if (isScreenSharing) {
+      try {
+        await room.localParticipant.setScreenShareEnabled(false);
+        store.setScreenSharing(false);
+        refreshParticipants(room);
+      } catch {
+        console.warn('Failed to stop screen share.');
+      }
+      return;
+    }
+
+    // In Electron, open the custom picker
+    if (window.IgniteNative?.getDesktopSources) {
+      store.setScreenSharePickerOpen(true);
+      return;
+    }
+
+    // In browser, use the default picker
     try {
-      await room.localParticipant.setScreenShareEnabled(!isScreenSharing);
-      store.setScreenSharing(!isScreenSharing);
+      await room.localParticipant.setScreenShareEnabled(true);
+      store.setScreenSharing(true);
       refreshParticipants(room);
     } catch {
-      // User likely cancelled the screenshare picker
       console.warn('Screen share cancelled or denied.');
+    }
+  },
+
+  async startScreenShare(
+    sourceId: string,
+    quality: { width: number; height: number; frameRate: number }
+  ) {
+    const store = useVoiceStore.getState();
+    const { room } = store;
+
+    if (!room) return;
+
+    try {
+      // Get the stream using Electron's chromeMediaSourceId constraint
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          mandatory: {
+            chromeMediaSource: 'desktop',
+            chromeMediaSourceId: sourceId,
+            maxWidth: quality.width,
+            maxHeight: quality.height,
+            maxFrameRate: quality.frameRate,
+          },
+        } as any,
+      });
+
+      const videoTrack = stream.getVideoTracks()[0];
+      if (!videoTrack) {
+        console.warn('No video track from screen capture.');
+        return;
+      }
+
+      // Publish the track to the LiveKit room as a screen share
+      await room.localParticipant.publishTrack(videoTrack, {
+        source: Track.Source.ScreenShare,
+        name: 'screen',
+        videoEncoding: {
+          maxBitrate: quality.frameRate >= 60 ? 4_000_000 : 2_500_000,
+          maxFramerate: quality.frameRate,
+        },
+      });
+
+      store.setScreenSharing(true);
+      refreshParticipants(room);
+
+      // Listen for the track ending (e.g. user stops via OS-level controls)
+      videoTrack.onended = () => {
+        room.localParticipant.unpublishTrack(videoTrack);
+        videoTrack.stop();
+        store.setScreenSharing(false);
+        refreshParticipants(room);
+      };
+    } catch (err) {
+      console.error('Failed to start screen share:', err);
+      toast.error('Failed to start screen share.');
     }
   },
 };

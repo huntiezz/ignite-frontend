@@ -11,6 +11,7 @@ import {
 } from '@phosphor-icons/react';
 import { useVoiceStore } from '@/store/voice.store';
 import { VoiceService } from '@/services/voice.service';
+import ScreenSharePicker from './ScreenSharePicker';
 
 const VoiceControls = () => {
   const { channelName, connectionState, isMuted, isDeafened, isCameraOn, isScreenSharing } =
@@ -98,6 +99,8 @@ const VoiceControls = () => {
           <PhoneDisconnect className="size-5" />
         </button>
       </div>
+
+      <ScreenSharePicker />
     </div>
   );
 };

@@ -21,6 +21,7 @@ interface VoiceState {
   isDeafened: boolean;
   isCameraOn: boolean;
   isScreenSharing: boolean;
+  isScreenSharePickerOpen: boolean;
   connectionState: 'disconnected' | 'connecting' | 'connected';
 
   setRoom: (room: Room | null) => void;
@@ -36,6 +37,7 @@ interface VoiceState {
   setDeafened: (deafened: boolean) => void;
   setCameraOn: (on: boolean) => void;
   setScreenSharing: (on: boolean) => void;
+  setScreenSharePickerOpen: (open: boolean) => void;
   reset: () => void;
 }
 
@@ -50,6 +52,7 @@ export const useVoiceStore = create<VoiceState>((set) => ({
   isDeafened: false,
   isCameraOn: false,
   isScreenSharing: false,
+  isScreenSharePickerOpen: false,
   connectionState: 'disconnected',
 
   setRoom: (room) => set({ room }),
@@ -61,6 +64,7 @@ export const useVoiceStore = create<VoiceState>((set) => ({
   setDeafened: (isDeafened) => set({ isDeafened }),
   setCameraOn: (isCameraOn) => set({ isCameraOn }),
   setScreenSharing: (isScreenSharing) => set({ isScreenSharing }),
+  setScreenSharePickerOpen: (isScreenSharePickerOpen) => set({ isScreenSharePickerOpen }),
   reset: () =>
     set({
       room: null,
@@ -73,6 +77,7 @@ export const useVoiceStore = create<VoiceState>((set) => ({
       isDeafened: false,
       isCameraOn: false,
       isScreenSharing: false,
+      isScreenSharePickerOpen: false,
       connectionState: 'disconnected',
     }),
 }));
