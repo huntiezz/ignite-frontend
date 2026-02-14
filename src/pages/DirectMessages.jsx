@@ -21,7 +21,7 @@ const DirectMessagesPage = () => {
 
   return (
     <DefaultLayout>
-      <div className="flex h-screen w-screen overflow-hidden bg-gray-700 text-gray-100">
+      <div className="flex h-full w-full overflow-hidden bg-gray-700 text-gray-100">
         {/* Sidebar Component */}
         <DMSidebar
           activeChannelId={channelId || 'friends'}

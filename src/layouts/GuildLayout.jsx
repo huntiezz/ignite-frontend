@@ -66,7 +66,7 @@ const GuildLayout = ({ children, guild }) => {
 
   return (
     <DefaultLayout>
-      <div className="flex h-screen w-screen">
+      <div className="flex h-full w-full">
         {isSidebarOpen && (
           <button
             type="button"

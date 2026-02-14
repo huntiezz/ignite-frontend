@@ -153,7 +153,7 @@ const AuthRoute = ({ children }) => {
   if (failed) {
     // If we initialization failed, show an error message with a retry button
     return (
-      <div className="flex h-screen flex-col items-center justify-center gap-4 bg-body">
+      <div className="flex h-full flex-col items-center justify-center gap-4 bg-body">
         <div className="text-xl font-semibold text-red-500">Server Error</div>
         <div className="text-center text-muted-foreground">
           The server appears to be down. Please try again later.
@@ -172,7 +172,7 @@ const AuthRoute = ({ children }) => {
 
   if (!initialized) {
     return (
-      <div className="flex h-screen items-center justify-center bg-body">
+      <div className="flex h-full items-center justify-center bg-body">
         <div className="size-16 animate-spin rounded-full border-4 border-solid border-primary border-t-transparent"></div>
       </div>
     );
@@ -236,7 +236,7 @@ const PublicRoute = ({ children }) => {
 
   if (!initialized) {
     return (
-      <div className="flex h-screen items-center justify-center bg-body">
+      <div className="flex h-full items-center justify-center bg-body">
         <div className="size-16 animate-spin rounded-full border-4 border-solid border-primary border-t-transparent"></div>
       </div>
     );

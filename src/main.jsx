@@ -53,7 +53,7 @@ function WindowBar() {
 
   return (
     <div
-      className="relative flex h-8 items-center justify-center border-b border-white/5 bg-gray-900"
+      className="relative flex h-8 items-center justify-center border-b border-white/5 bg-[#121214]"
       style={{
         WebkitAppRegion: 'drag',
         userSelect: 'none',
@@ -115,11 +115,15 @@ window.Echo = new Echo({
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <WindowBar />
-    <BrowserRouter>
-      <App />
-      <Toaster />
-      <RouteLogger />
-    </BrowserRouter>
+    <div className="flex h-screen flex-col overflow-hidden">
+      <WindowBar />
+      <div className="flex min-h-0 flex-1 flex-col">
+        <BrowserRouter>
+          <App />
+          <Toaster />
+          <RouteLogger />
+        </BrowserRouter>
+      </div>
+    </div>
   </React.StrictMode>
 );

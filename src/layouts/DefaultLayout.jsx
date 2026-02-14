@@ -270,7 +270,7 @@ const Sidebar = () => {
 
   return (
     <>
-      <div className="scrollbar-none relative left-0 top-0 m-0 flex h-screen min-w-min flex-col items-center overflow-y-auto border-r border-white/5 bg-[#121214] pt-3 text-white shadow">
+      <div className="scrollbar-none relative left-0 top-0 m-0 flex h-full min-w-min flex-col items-center overflow-y-auto border-r border-white/5 bg-[#121214] pt-3 text-white shadow">
         {/* Main Home / Friends Button */}
         <Link to="/channels/@me">
           <SidebarIcon
@@ -355,7 +355,7 @@ const Sidebar = () => {
 const DefaultLayout = ({ children }) => {
   return (
     <GuildContextProvider>
-      <div className="flex h-screen flex-col overflow-hidden">
+      <div className="flex h-full flex-col overflow-hidden">
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <Sidebar />
           <div className="flex flex-1 overflow-hidden">{children}</div>
