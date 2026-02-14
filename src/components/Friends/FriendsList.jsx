@@ -38,7 +38,7 @@ const FriendsList = ({ friends, filter }) => {
                 {filter} — {filteredFriends.length}
             </div>
             {filteredFriends.map(friend => (
-                <div key={friend.id} className="group flex items-center justify-between border-t border-gray-600/30 px-2 py-3 hover:bg-gray-600/30 hover:rounded-lg cursor-pointer">
+                <div key={friend.id} className="group flex items-center justify-between border-t border-white/5/30 px-2 py-3 hover:bg-gray-600/30 hover:rounded-lg cursor-pointer">
                     <div className="flex items-center gap-3">
                         <Avatar user={friend} className="size-8 rounded-full" />
                         <div>

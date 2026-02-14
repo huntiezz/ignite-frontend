@@ -71,7 +71,7 @@ const DMSidebar = ({ activeChannelId, onNavigate }) => {
   );
 
   return (
-    <aside className="flex w-80 flex-col bg-gray-800 select-none cursor-default">
+    <aside className="flex w-80 flex-col bg-[#121214] select-none cursor-default">
       <div className="flex-1 overflow-y-auto p-2">
         <Button
           variant={activeChannelId === 'friends' ? "secondary" : "ghost"}
@@ -87,7 +87,7 @@ const DMSidebar = ({ activeChannelId, onNavigate }) => {
           )}
         </Button>
 
-        <div className="border-b border-gray-700 my-2 mx-2" />
+        <div className="border-b border-white/5 my-2 mx-2" />
 
         <ChannelSection
           title="Pinned"

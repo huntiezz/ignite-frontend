@@ -104,7 +104,7 @@ const GuildMemberPopoverContent = ({ userId, guild = null }) => {
       {loading ? (
         <CircleNotch className="mx-auto animate-spin text-gray-500" />
       ) : (
-        <div className="w-80 rounded-lg bg-[#111214] shadow-xl overflow-hidden border border-[#1e1f22]">
+        <div className="w-80 rounded-lg bg-[#111214] shadow-xl overflow-hidden border border-white/5">
           <div className="relative h-28">
             <div
               className="h-full bg-primary"
@@ -122,10 +122,10 @@ const GuildMemberPopoverContent = ({ userId, guild = null }) => {
                 onClick={() => setProfileModalOpen(true)}
                 className="group relative rounded-full"
               >
-                <div className="rounded-full border-[6px] border-[#111214] bg-[#111214] transition hover:brightness-110">
+                <div className="rounded-full border-[6px] border-white/5 bg-[#111214] transition hover:brightness-110">
                   <Avatar user={user} className="size-20 !cursor-pointer text-3xl" />
                 </div>
-                {user.status === 'online' && (<div className="absolute bottom-1 right-1 size-6 rounded-full border-4 border-[#111214] bg-[#23a559] z-10" />)}
+                {user.status === 'online' && (<div className="absolute bottom-1 right-1 size-6 rounded-full border-4 border-white/5 bg-[#23a559] z-10" />)}
 
                 <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition group-hover:opacity-100">
                   <span className="text-[10px] font-bold uppercase text-white drop-shadow-md">View Profile</span>

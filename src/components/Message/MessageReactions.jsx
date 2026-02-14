@@ -34,7 +34,7 @@ const MessageReactions = ({ message, channelId }) => {
                         "inline-flex items-center gap-1 px-2 py-1 rounded border text-sm transition-colors",
                         reaction.me
                             ? "bg-primary/20 border-primary/50 hover:bg-primary/30 hover:border-primary/60"
-                            : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"
+                            : "bg-gray-800 border-white/5 hover:bg-gray-700 hover:border-white/5"
                     )}
                 >
                     <span className="text-base leading-none">{reaction.emoji}</span>

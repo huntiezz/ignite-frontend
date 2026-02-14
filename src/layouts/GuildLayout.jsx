@@ -97,7 +97,7 @@ const GuildLayout = ({ children, guild }) => {
         {!isSidebarOpen && (
           <button
             type="button"
-            className="fixed left-0 top-1/2 z-30 h-24 w-4 -translate-y-1/2 rounded-r border border-gray-600/60 bg-gray-800/70 shadow-sm transition-all duration-300 hover:w-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary animate-pulse md:hidden"
+            className="fixed left-0 top-1/2 z-30 h-24 w-4 -translate-y-1/2 rounded-r border border-white/5/60 bg-gray-800/70 shadow-sm transition-all duration-300 hover:w-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary animate-pulse md:hidden"
             onClick={() => setIsSidebarOpen(true)}
             aria-label="Open sidebar"
           />

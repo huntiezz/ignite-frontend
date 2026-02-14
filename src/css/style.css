@@ -87,4 +87,33 @@
 html,
 body {
   touch-action: pan-x pan-y;
+  font-family: 'font';
+}
+
+@font-face {
+  font-family: 'font';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../assets/fonts/font-regular.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'font';
+  font-style: normal;
+  font-weight: 500;
+  src: url('../assets/fonts/font-medium.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'font';
+  font-style: normal;
+  font-weight: 600;
+  src: url('../assets/fonts/font-semibold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'font';
+  font-style: normal;
+  font-weight: 700;
+  src: url('../assets/fonts/font-bold.woff') format('woff');
 }

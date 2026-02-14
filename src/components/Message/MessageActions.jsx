@@ -13,7 +13,7 @@ const MessageActions = ({ message, channelId, canEdit, canDelete, onEdit, onDele
     }, [message.id, channelId]);
 
     return (
-        <div className={`absolute -top-4 right-4 rounded-md border border-gray-800 bg-gray-700 z-40 ${emojiPickerOpen ? 'flex' : 'hidden group-hover:flex'}`}>
+        <div className={`absolute -top-4 right-4 rounded-md border border-white/5 bg-gray-700 z-40 ${emojiPickerOpen ? 'flex' : 'hidden group-hover:flex'}`}>
             <button type="button" onClick={onReply} className="rounded-md p-2 text-sm text-white/90 hover:bg-primary/10 hover:text-primary">
                 <ArrowBendUpLeft className="size-5" />
             </button>

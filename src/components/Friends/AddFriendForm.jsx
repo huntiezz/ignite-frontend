@@ -24,7 +24,7 @@ const AddFriendForm = () => {
     }, [friendUsername]);
 
     return (
-        <div className="w-full border-b border-gray-700 pb-5">
+        <div className="w-full border-b border-white/5 pb-5">
             <h2 className="text-lg font-semibold text-white mb-2">Add Friend</h2>
             <p className="text-xs text-gray-300 mb-4">You can add a friend with their Ignite username.</p>
             <form onSubmit={sendFriendRequest} className="relative flex items-center bg-[#1e1f22] rounded-lg p-2 border border-black/10 focus-within:border-[#00a8fc] ring-1 ring-transparent focus-within:ring-[#00a8fc]">

@@ -27,7 +27,7 @@ const PendingRequests = ({ requests, currentUser }) => {
                 const user = isOutgoing ? req.receiver : req.sender;
 
                 return (
-                    <div key={req.id} className="group flex items-center justify-between border-t border-gray-600/30 px-2 py-3 hover:bg-gray-600/30 hover:rounded-lg">
+                    <div key={req.id} className="group flex items-center justify-between border-t border-white/5/30 px-2 py-3 hover:bg-gray-600/30 hover:rounded-lg">
                         <div className="flex items-center gap-3">
                             <Avatar user={user} className="size-8 rounded-full" />
                             <div>

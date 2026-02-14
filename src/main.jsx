@@ -52,7 +52,7 @@ function WindowBar() {
 
   return (
     <div
-      className="relative flex h-8 items-center justify-center border-b border-gray-700 bg-gray-900"
+      className="relative flex h-8 items-center justify-center border-b border-white/5 bg-gray-900"
       style={{
         WebkitAppRegion: 'drag',
         userSelect: 'none',

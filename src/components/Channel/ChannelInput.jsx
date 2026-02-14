@@ -411,7 +411,7 @@ const ChannelInput = ({ channel }) => {
   /* ---------------- render ---------------- */
 
   return (
-    <div className="bg-gray-700/95 px-2 pt-2 pb-2">
+    <div className="bg-gray-[#1a1a1e] px-2 pt-2 pb-2">
       {replyingMessage && (
         <div className="flex items-center gap-2 rounded-t-md bg-gray-800 px-3 py-2 text-sm text-gray-300">
           <span className="text-gray-400 shrink-0">Replying to</span>
@@ -437,7 +437,7 @@ const ChannelInput = ({ channel }) => {
           pointer-events: none;
         }
       `}</style>
-      <InputGroup className="relative flex items-center bg-gray-800 h-auto border border-gray-600">
+      <InputGroup className="relative flex items-center bg-[#222327] h-auto border border-white/5">
         <Popover.Root
           open={!!mentionQuery && filteredMembers.length > 0}
           modal={false}
@@ -492,8 +492,8 @@ const ChannelInput = ({ channel }) => {
         </Popover.Root>
 
         {emojiQuery && filteredEmojis.length > 0 && (
-          <div className="absolute left-0 right-0 bottom-full mb-2 z-50 w-full max-h-[300px] rounded bg-[#2c2f33] shadow-lg flex flex-col border border-gray-700">
-            <div className="text-xs font-bold text-gray-400 px-4 py-3 border-b border-gray-700 flex-shrink-0">EMOJI MATCHING :{emojiQuery}</div>
+          <div className="absolute left-0 right-0 bottom-full mb-2 z-50 w-full max-h-[300px] rounded bg-[#2c2f33] shadow-lg flex flex-col border border-white/5">
+            <div className="text-xs font-bold text-gray-400 px-4 py-3 border-b border-white/5 flex-shrink-0">EMOJI MATCHING :{emojiQuery}</div>
             <div className="overflow-y-auto flex-1">
               {filteredEmojis.map((item, i) => (
                 <button

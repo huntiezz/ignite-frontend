@@ -14,18 +14,18 @@ const Channel = ({ channel }) => {
 
   if (channel?.type === ChannelType.GUILD_VOICE) {
     return (
-      <div className="relative flex min-h-0 w-full flex-1 flex-col bg-gray-700">
+      <div className="relative flex min-h-0 w-full flex-1 flex-col bg-[#1a1a1e]">
         <ChannelBar channel={channel} />
-        <hr className="m-0 w-full border border-gray-900 bg-gray-900 p-0" />
+        <hr className="m-0 w-full border border-white/5 bg-gray-900 p-0" />
         <VoiceChannelView channel={channel} />
       </div>
     );
   }
 
   return (
-    <div className="relative flex min-h-0 w-full flex-1 flex-col bg-gray-700">
+    <div className="relative flex min-h-0 w-full flex-1 flex-col bg-[#1a1a1e]">
       <ChannelBar channel={channel} onJumpToMessage={() => { }} />
-      <hr className="m-0 w-full border border-gray-900 bg-gray-900 p-0" />
+      <hr className="m-0 w-full border border-white/5 bg-gray-900 p-0" />
       <div className="flex min-h-0 flex-1">
         <div className="relative flex h-full w-full flex-1 flex-col overflow-hidden">
           <ChannelMessages

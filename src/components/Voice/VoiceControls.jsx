@@ -8,7 +8,7 @@ const VoiceControls = () => {
     if (connectionState === 'disconnected') return null;
 
     return (
-        <div className="border-t border-gray-900 bg-gray-800 px-2 py-3">
+        <div className="border-t border-white/5 bg-gray-800 px-2 py-3">
             {/* Connection info */}
             <div className="mb-2 flex items-center gap-2 px-1">
                 <WifiHigh className="size-4 shrink-0 text-green-500" weight="bold" />

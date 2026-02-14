@@ -8,7 +8,7 @@ const FormInput = ({ name, validation, size = 'md', className, ...rest }) => {
     <input
       {...(name && register(name, validation))}
       {...rest}
-      className={`w-full rounded-md border border-gray-700 bg-gray-800 ${sizeClasses} text-white focus:border-primary focus:ring-primary ${className}`}
+      className={`w-full rounded-md border border-white/5 bg-gray-800 ${sizeClasses} text-white focus:border-primary focus:ring-primary ${className}`}
     />
   );
 };

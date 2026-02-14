@@ -47,16 +47,16 @@ const ChannelRow = ({ channel, isActive, isUnread, mentionsCount, isDragOverlay 
 
     return (
         <div
-            className={`relative mx-2 my-0.5 flex items-center rounded px-2 py-1 transition-colors ${isDragOverlay
-                ? 'bg-gray-600 text-gray-100 shadow-md shadow-black/40 ring-1 ring-gray-500/40'
+            className={`relative mx-2 my-0.5 flex items-center rounded-sm px-2 py-1 transition-colors ${isDragOverlay
+                ? 'bg-white/[0.11] text-gray-100 shadow-md shadow-black/40 ring-1 ring-gray-500/40'
                 : isActive
-                    ? 'bg-gray-600 text-gray-100'
+                    ? 'bg-white/[0.11] text-gray-100'
                     : isUnread
-                        ? 'text-gray-100 hover:bg-gray-700'
-                        : 'text-gray-500 hover:bg-gray-700 hover:text-gray-400'
+                        ? 'text-gray-100 hover:bg-white/5'
+                        : 'text-gray-500 hover:bg-white/5 hover:text-gray-100'
                 }`}
         >
-            <Icon className={`size-5 shrink-0 ${isDragOverlay ? 'text-gray-300' : isActive || isUnread ? 'text-gray-200' : 'text-gray-500 group-hover:text-gray-400'
+            <Icon className={`size-5 shrink-0 ${isDragOverlay ? 'text-gray-300' : isActive || isUnread ? 'text-gray-200' : 'text-gray-500'
                 }`} />
             <p className={`ml-1 flex-1 truncate text-base select-none ${isDragOverlay ? 'font-medium text-gray-100' : isActive || isUnread ? 'font-semibold text-white' : 'font-medium'
                 }`}>
@@ -586,7 +586,7 @@ const GuildSidebar = ({
         >
             <ContextMenu>
                 <ContextMenuTrigger>
-                    <div className="relative top-0 flex h-full min-w-[240px] flex-col bg-gray-800 text-gray-100">
+                    <div className="relative top-0 flex h-full min-w-[240px] flex-col bg-[#121214] text-gray-100">
                         <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto">
                             <GuildSidebarHeader
                                 guildName={guild?.name}
@@ -594,7 +594,7 @@ const GuildSidebar = ({
                                 onOpenServerSettings={onOpenServerSettings}
                                 canOpenServerSettings={canOpenServerSettings}
                             />
-                            <hr className="m-0 w-full border border-gray-900 bg-gray-900 p-0" />
+                            <hr className="m-0 w-full border border-white/5 bg-[#121214] p-0" />
 
                             {/* Root Channels (No Category) */}
                             <GuildSidebarCategory

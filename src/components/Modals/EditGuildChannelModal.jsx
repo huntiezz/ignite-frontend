@@ -80,7 +80,7 @@ const OverviewTab = ({ guild, channel }) => {
     };
 
     return (
-        <div className="flex h-full w-full flex-col overflow-hidden rounded-md border border-gray-800 bg-gray-900">
+        <div className="flex h-full w-full flex-col overflow-hidden rounded-md border border-white/5 bg-gray-900">
             {/* Scrollable Content Area */}
             <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-gray-700 bg-gray-900/50">
                 <div className="flex flex-col gap-6 max-w-lg">
@@ -99,7 +99,7 @@ const OverviewTab = ({ guild, channel }) => {
                         </div>
                         <InputGroup>
                             <InputGroupInput
-                                className="w-full rounded border border-gray-700 bg-gray-800 p-2 text-gray-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                                className="w-full rounded border border-white/5 bg-gray-800 p-2 text-gray-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
                                 value={name}
                                 onChange={e => setName(e.target.value)}
                                 placeholder="Enter channel name"
@@ -114,7 +114,7 @@ const OverviewTab = ({ guild, channel }) => {
                         </div>
                         <InputGroup>
                             <InputGroupInput
-                                className="w-full rounded border border-gray-700 bg-gray-800 p-2 text-gray-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                                className="w-full rounded border border-white/5 bg-gray-800 p-2 text-gray-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
                                 value={description}
                                 onChange={e => setDescription(e.target.value)}
                                 placeholder="Enter channel description"
@@ -125,7 +125,7 @@ const OverviewTab = ({ guild, channel }) => {
             </div>
 
             {/* Floating Action Bar */}
-            <div className={`border-t border-gray-800 bg-gray-900 p-4 transition-all duration-300 ${hasChanged ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-2 pointer-events-none'}`}>
+            <div className={`border-t border-white/5 bg-gray-900 p-4 transition-all duration-300 ${hasChanged ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-2 pointer-events-none'}`}>
                 <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-400">
                         {hasChanged ? 'Careful - you have unsaved changes!' : 'Channel settings'}
@@ -159,7 +159,7 @@ const PermissionRow = ({ label, state, onAllow, onDeny, onReset }) => {
                     onClick={onDeny}
                     className={`flex h-8 w-8 items-center justify-center rounded-l border border-r-0 transition-all ${state === 0
                             ? 'bg-red-500/20 border-red-500 text-red-500'
-                            : 'bg-gray-800 border-gray-700 text-gray-500 hover:bg-gray-700 hover:text-red-400'
+                            : 'bg-gray-800 border-white/5 text-gray-500 hover:bg-gray-700 hover:text-red-400'
                         }`}
                 >
                     <X weight="bold" size={14} />
@@ -170,8 +170,8 @@ const PermissionRow = ({ label, state, onAllow, onDeny, onReset }) => {
                     type="button"
                     onClick={onReset}
                     className={`flex h-8 w-8 items-center justify-center border transition-all ${state === 1
-                            ? 'bg-gray-600/30 border-gray-500 text-gray-200'
-                            : 'bg-gray-800 border-gray-700 text-gray-500 hover:bg-gray-700 hover:text-gray-300'
+                            ? 'bg-gray-600/30 border-white/5 text-gray-200'
+                            : 'bg-gray-800 border-white/5 text-gray-500 hover:bg-gray-700 hover:text-gray-300'
                         }`}
                 >
                     <Slash weight="bold" size={14} />
@@ -183,7 +183,7 @@ const PermissionRow = ({ label, state, onAllow, onDeny, onReset }) => {
                     onClick={onAllow}
                     className={`flex h-8 w-8 items-center justify-center rounded-r border border-l-0 transition-all ${state === 2
                             ? 'bg-green-500/20 border-green-500 text-green-500'
-                            : 'bg-gray-800 border-gray-700 text-gray-500 hover:bg-gray-700 hover:text-green-400'
+                            : 'bg-gray-800 border-white/5 text-gray-500 hover:bg-gray-700 hover:text-green-400'
                         }`}
                 >
                     <Check weight="bold" size={14} />
@@ -336,9 +336,9 @@ const PermissionsTab = ({ guild, channel }) => {
     };
 
     return (
-        <div className="flex h-[500px] w-full flex-col overflow-hidden rounded-md border border-gray-800 bg-gray-900 md:flex-row">
+        <div className="flex h-[500px] w-full flex-col overflow-hidden rounded-md border border-white/5 bg-gray-900 md:flex-row">
             {/* Sidebar: Roles List */}
-            <div className="flex w-full flex-col border-b border-gray-800 bg-gray-900 md:w-48 md:border-b-0 md:border-r">
+            <div className="flex w-full flex-col border-b border-white/5 bg-gray-900 md:w-48 md:border-b-0 md:border-r">
                 <div className="p-3 text-xs font-bold uppercase tracking-wider text-gray-500">
                     Roles
                 </div>
@@ -386,7 +386,7 @@ const PermissionsTab = ({ guild, channel }) => {
                 </div>
 
                 {/* Floating Action Bar (Only shows if there are changes) */}
-                <div className={`border-t border-gray-800 bg-gray-900 p-4 transition-all duration-300 ${hasChanged ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-2 pointer-events-none'}`}>
+                <div className={`border-t border-white/5 bg-gray-900 p-4 transition-all duration-300 ${hasChanged ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-2 pointer-events-none'}`}>
                     <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-400">
                             {hasChanged ? 'Careful - you have unsaved changes!' : 'Permission settings'}
@@ -446,7 +446,7 @@ const EditGuildChannelModal = ({ isOpen, onClose, guild, initialTab = 'info', ch
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-6">
             <div className="w-full max-w-5xl overflow-y-auto rounded-lg bg-gray-900 text-gray-100 shadow-2xl max-h-[calc(100vh-1.5rem)]">
-                <div className="flex flex-col gap-3 border-b border-gray-800 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <div className="flex flex-col gap-3 border-b border-white/5 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                     <div>
                         <h2 className="text-xl font-bold">#{channel?.name}</h2>
                     </div>
@@ -460,7 +460,7 @@ const EditGuildChannelModal = ({ isOpen, onClose, guild, initialTab = 'info', ch
                     </button>
                 </div>
                 <div className="flex min-h-[520px] flex-col md:flex-row">
-                    <nav className="w-full shrink-0 border-b border-gray-800 bg-gray-950/40 p-3 md:w-56 md:border-b-0 md:border-r md:p-4">
+                    <nav className="w-full shrink-0 border-b border-white/5 bg-gray-950/40 p-3 md:w-56 md:border-b-0 md:border-r md:p-4">
                         <div className="flex gap-2 overflow-x-auto text-sm font-medium md:block md:space-y-1">
                             {tabs.map((tab) => (
                                 <button

@@ -80,7 +80,7 @@ const GuildSidebarHeader = ({ guildName = '', guild, onOpenServerSettings }) => 
             </button>
 
             {menuOpen && (
-                <div className="absolute inset-x-2 top-12 z-10 rounded bg-gray-700 py-2 shadow-lg border border-gray-600">
+                <div className="absolute inset-x-2 top-12 z-10 rounded bg-gray-700 py-2 shadow-lg border border-white/5">
                     {canInvite && (<>
                         <button
                             type="button"
@@ -95,7 +95,7 @@ const GuildSidebarHeader = ({ guildName = '', guild, onOpenServerSettings }) => 
                             <UserPlus className="size-4 ml-2" />
                         </button>
 
-                        <hr className="my-1 border-gray-600" /></>
+                        <hr className="my-1 border-white/5" /></>
                     )}
 
                     {canOpenServerSettings && (<>
@@ -111,7 +111,7 @@ const GuildSidebarHeader = ({ guildName = '', guild, onOpenServerSettings }) => 
                             <Gear className="size-4 ml-2" />
                         </button>
 
-                        <hr className="my-1 border-gray-600" />
+                        <hr className="my-1 border-white/5" />
                     </>
                     )}
 

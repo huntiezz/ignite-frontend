@@ -28,9 +28,9 @@ const FriendsDashboard = () => {
     }, [friends, searchQuery]);
 
     return (
-        <div className="flex h-full flex-col bg-gray-700">
+        <div className="flex h-full flex-col bg-[#1a1a1e]">
             {/* Header */}
-            <header className="flex h-12 items-center justify-between px-4 shadow-sm border-b border-[#1f2124]">
+            <header className="flex h-12 items-center justify-between px-4 shadow-sm border-b border-white/5">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 text-[#f2f3f5] font-semibold">
                         <Users size={20} className="text-[#80848e]" />
@@ -85,7 +85,7 @@ const FriendsDashboard = () => {
                                     placeholder="Search friends..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-gray-800/50 text-white placeholder:text-gray-500 rounded-lg border border-gray-700/60 text-sm focus:outline-none focus:bg-gray-800/80 focus:border-gray-600 focus:ring-0 transition-all"
+                                    className="w-full px-4 py-2.5 bg-gray-800/50 text-white placeholder:text-gray-500 rounded-lg border border-white/5/60 text-sm focus:outline-none focus:bg-gray-800/80 focus:border-white/5 focus:ring-0 transition-all"
                                 />
                                 {searchQuery && (
                                     <button

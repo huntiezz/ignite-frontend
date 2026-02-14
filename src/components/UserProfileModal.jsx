@@ -129,10 +129,10 @@ const UserProfileModal = ({ user, isOpen, setIsOpen }) => {
                 <div className="relative px-4 pb-4">
                     {/* Avatar Area */}
                     <div className="absolute -top-[50px] left-4">
-                        <div className="rounded-full border-[7px] border-[#111214] bg-[#111214]">
+                        <div className="rounded-full border-[7px] border-white/5 bg-[#111214]">
                             <Avatar user={user} className="size-[94px] !cursor-default text-4xl" />
                         </div>
-                        <div className="absolute bottom-2 right-2 size-6 rounded-full border-[5px] border-[#111214] bg-[#23a559]" />
+                        <div className="absolute bottom-2 right-2 size-6 rounded-full border-[5px] border-white/5 bg-[#23a559]" />
                     </div>
 
                     {/* Actions Corner */}

@@ -39,7 +39,7 @@ const MemberListItem = ({ member }) => {
                             <div className="relative flex-shrink-0">
                                 <Avatar user={member.user} className="size-8" />
                                 {status === 'online' && (
-                                    <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-green-500 border-2 border-gray-800" />
+                                    <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-green-500 border-2 border-white/5" />
                                 )}
                             </div>
                             <p
@@ -136,8 +136,8 @@ const MemberList = ({ guildId }) => {
     return (
         <div className={`relative z-0 transition-all duration-300 ${memberListOpen ? 'w-60 md:w-72' : 'w-0'}`}>
             {memberListOpen && (
-                <div className="flex h-full flex-col border-l border-gray-800 bg-gray-800">
-                    <div className="flex h-12 items-center border-b border-gray-700 px-4 text-sm font-semibold text-gray-300">
+                <div className="flex h-full flex-col border-l border-white/5 bg-[#1a1a1e]">
+                    <div className="flex h-12 items-center border-b border-white/5 px-4 text-sm font-semibold text-gray-300">
                         Members - {activeGuildMembers?.length}
                     </div>
                     <div className="flex flex-1 flex-col gap-2 p-2 text-gray-400 overflow-y-auto">

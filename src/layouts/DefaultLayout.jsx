@@ -41,7 +41,7 @@ const SidebarIcon = ({ icon = '', iconUrl = '', isActive = false, isServerIcon =
     ></div>
 
     <div className="relative mx-auto w-12 h-12">
-      <div className={`absolute inset-0 flex cursor-pointer items-center justify-center overflow-hidden transition-all duration-300 ease-out hover:rounded-xl hover:bg-gray-600/60 hover:text-white ${isActive ? 'rounded-xl bg-gray-600/60 text-white' : 'rounded-3xl bg-gray-700 text-gray-100'} ${!isServerIcon ? 'text-green-500 hover:bg-green-500 hover:text-white' : ''}`}>
+      <div className={`absolute inset-0 flex cursor-pointer items-center justify-center overflow-hidden transition-all duration-300 ease-out rounded-2xl hover:bg-primary hover:text-white ${isActive ? 'bg-primary text-white' : 'bg-[#1d1d1e] text-gray-100'} ${!isServerIcon ? 'text-green-500 hover:bg-green-500 hover:text-white' : ''}`}>
         {icon ? (
           icon
         ) : iconUrl ? (
@@ -51,14 +51,14 @@ const SidebarIcon = ({ icon = '', iconUrl = '', isActive = false, isServerIcon =
         )}
 
         {/* Tooltip */}
-        <span className="pointer-events-none absolute left-14 m-2 w-auto min-w-max origin-left scale-0 rounded-md bg-gray-900 p-2 text-sm font-bold text-white shadow-lg transition-all duration-100 group-hover:scale-100 z-50">
+        <span className="pointer-events-none absolute left-14 m-2 w-auto min-w-max origin-left scale-0 rounded-md bg-[#121214] p-2 text-sm font-bold text-white shadow-lg transition-all duration-100 group-hover:scale-100 z-50">
           {text}
         </span>
       </div>
 
       {/* Notification Badge - positioned relative to icon */}
       {mentionCount > 0 && (
-        <div className="absolute -bottom-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] font-bold text-white border-2 border-gray-900 z-10">
+        <div className="absolute -bottom-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] font-bold text-white border-2 border-white/5 z-10">
           {mentionCount > 99 ? '99+' : mentionCount}
         </div>
       )}
@@ -240,7 +240,7 @@ const Sidebar = () => {
 
   return (
     <>
-      <div className="relative left-0 top-0 m-0 flex h-screen min-w-min flex-col items-center bg-gray-900 pt-3 text-white shadow scrollbar-none overflow-y-auto border-r border-gray-800">
+      <div className="relative left-0 top-0 m-0 flex h-screen min-w-min flex-col items-center bg-[#121214] pt-3 text-white shadow scrollbar-none overflow-y-auto border-r border-white/5">
 
         {/* Main Home / Friends Button */}
         <Link to="/channels/@me">
@@ -253,7 +253,7 @@ const Sidebar = () => {
           />
         </Link>
 
-        <hr className="mx-auto mb-2 w-8 rounded-full border-2 border-gray-800 bg-gray-800" />
+        <hr className="mx-auto mb-2 w-8 rounded-full border-2 border-white/5 bg-gray-800" />
 
         {/* List of Unread DMs */}
         {unreadDmChannels.map((dm) => (
@@ -271,7 +271,7 @@ const Sidebar = () => {
         ))}
 
         {unreadDmChannels.length > 0 && (
-          <hr className="mx-auto mb-2 w-8 rounded-full border-2 border-gray-800 bg-gray-800" />
+          <hr className="mx-auto mb-2 w-8 rounded-full border-2 border-white/5 bg-gray-800" />
         )}
 
         {/* Guilds List — Draggable */}

@@ -23,11 +23,11 @@ const UserProfileDialogContent = ({ user }) => {
             <div className="relative px-6 pb-6 pt-16">
                 {/* Avatar with Ring */}
                 <div className="absolute -top-16 left-6">
-                    <div className="rounded-full border-[8px] border-[#111214] bg-[#111214] transition-transform hover:scale-105">
+                    <div className="rounded-full border-[8px] border-white/5 bg-[#111214] transition-transform hover:scale-105">
                         <Avatar user={user} className="size-32 text-5xl cursor-default" />
                     </div>
                     {/* Status Indicator */}
-                    <div className="absolute bottom-2 right-2 size-8 rounded-full border-[6px] border-[#111214] bg-green-500" />
+                    <div className="absolute bottom-2 right-2 size-8 rounded-full border-[6px] border-white/5 bg-green-500" />
                 </div>
 
                 <div className="space-y-6">
