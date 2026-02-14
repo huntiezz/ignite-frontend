@@ -58,20 +58,3 @@
   border-radius: 5px;
   outline: none;
 }
-
-label {
-  display: block;
-  margin-top: 10px;
-}
-
-input[type='text'],
-input[type='number'] {
-  width: 100%;
-  padding: 8px;
-  margin-top: 5px;
-  margin-bottom: 20px;
-  border-radius: 5px;
-  border: 1px solid #777; /* Darker borders */
-  background-color: #555; /* Darker input fields */
-  color: #ddd; /* Lighter text */
-}
