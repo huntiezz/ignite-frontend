@@ -648,7 +648,7 @@ const GuildSidebar = ({
                 onCreateChannel={onCreateChannel}
                 onCreateCategory={onCreateCategory}
               />
-              <hr className="m-0 w-full border border-white/5 bg-[#121214] p-0" />
+              <hr className="m-0 w-full border border-t-0 border-white/5 bg-[#121214] p-0" />
 
               {/* Root Channels (No Category) */}
               <GuildSidebarCategory
