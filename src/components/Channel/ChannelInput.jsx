@@ -8,7 +8,7 @@ import {
 } from '../ui/emoji-picker';
 import { useChannelInputContext, useChannelContext } from '../../contexts/ChannelContext.jsx';
 import { useChannelsStore } from '../../store/channels.store';
-import { X, Hash, Megaphone, ChatText } from '@phosphor-icons/react';
+import { X, Hash, Megaphone, ChatText, SpeakerHigh } from '@phosphor-icons/react';
 import { useGuildsStore } from '../../store/guilds.store';
 import { useGuildContext } from '../../contexts/GuildContext';
 import { ChannelType } from '../../enums/ChannelType';
@@ -327,8 +327,6 @@ const ChannelInput = ({ channel }) => {
       )
       .slice(0, SUGGESTIONS_LIMIT);
   }, [members, mentionQuery]);
-
-  /* ---------------- channel mentions ---------------- */
 
   /* ---------------- channel mentions ---------------- */
 
@@ -661,7 +659,9 @@ const ChannelInput = ({ channel }) => {
                       syncValue();
                     }}
                   >
-                    {c.type === 5 ? (
+                    {c.type === 2 ? (
+                      <SpeakerHigh className="size-4 text-gray-400" />
+                    ) : c.type === 5 ? (
                       <Megaphone className="size-4 text-gray-400" />
                     ) : (
                       <Hash className="size-4 text-gray-400" />
