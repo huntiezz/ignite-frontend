@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import { useChannelsStore } from '../store/channels.store';
 import { useGuildsStore } from '../store/guilds.store';
+import { useTypingStore } from '../store/typing.store';
 import api from '../api.js';
 import axios from 'axios';
 import useStore from '../hooks/useStore';
@@ -147,6 +148,27 @@ export const ChannelsService = {
     } catch {
       toast.error('Failed to delete channel');
     }
+  },
+
+  _lastTypingSent: {} as Record<string, number>,
+
+  handleMemberTyping(event: any) {
+    const currentUser = useStore.getState().user;
+    console.log("Member", event);
+    if (!event.member.user) return;
+    console.log("Adding");
+    useTypingStore.getState().addTypingUser(event.channel.id, {
+      user_id: event.member.user.id,
+      username: event.member.user.username,
+    });
+    console.log("Added typing user", event.member.user);
+  },
+
+  async sendTypingIndicator(channelId: string) {
+    const now = Date.now();
+    if (now - (this._lastTypingSent[channelId] || 0) < 1000) return;
+    this._lastTypingSent[channelId] = now;
+    await api.post(`channels/${channelId}/typing`).catch(() => {});
   },
 
   async sendChannelMessage(channelId: string, content: string, replyTo: string | null = null) {

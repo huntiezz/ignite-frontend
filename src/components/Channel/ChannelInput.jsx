@@ -13,7 +13,7 @@ import { useGuildsStore } from '../../store/guilds.store';
 import { useGuildContext } from '../../contexts/GuildContext';
 import { ChannelType } from '../../enums/ChannelType';
 import useStore from '../../hooks/useStore';
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Smile } from 'lucide-react';
 import { ChannelsService } from '../../services/channels.service';
@@ -22,6 +22,7 @@ import { Permissions } from '../../enums/Permissions';
 import { toast } from 'sonner';
 import { emojiMap, registerEmoji } from '../../utils/emoji.utils';
 import { useEmojisStore } from '../../store/emojis.store';
+import { useTypingStore } from '../../store/typing.store';
 
 const MAX_MESSAGE_LENGTH = 2000;
 const SUGGESTIONS_LIMIT = 10;
@@ -205,6 +206,23 @@ const ChannelInput = ({ channel }) => {
   const members = guildsStore.guildMembers[guildId] || [];
   const channelMessages = useChannelsStore((s) => s.channelMessages);
 
+  const typingUsers = useTypingStore((s) => s.typing[channel?.channel_id] || []);
+  const clearExpired = useTypingStore((s) => s.clearExpired);
+
+  useEffect(() => {
+    const interval = setInterval(clearExpired, 1000);
+    return () => clearInterval(interval);
+  }, [clearExpired]);
+
+  const typingText = useMemo(() => {
+    console.log(typingUsers);
+    if (typingUsers.length === 0) return null;
+    const names = typingUsers.map((t) => t.username);
+    if (names.length === 1) return `${names[0]} is typing...`;
+    if (names.length === 2) return `${names[0]} and ${names[1]} are typing...`;
+    return `${names[0]}, ${names[1]}, and others are typing...`;
+  }, [typingUsers]);
+
   const replyingMessage = useMemo(() => {
     if (!replyingId || !channel?.channel_id) return null;
     return (channelMessages[channel.channel_id] || []).find((m) => m.id === replyingId);
@@ -328,6 +346,10 @@ const ChannelInput = ({ channel }) => {
     // Clean up empty editor to show placeholder
     if (editorRef.current && editorRef.current.textContent.trim() === '') {
       editorRef.current.innerHTML = '';
+    }
+
+    if (channel?.channel_id && editorRef.current.textContent.trim() !== '') {
+      ChannelsService.sendTypingIndicator(channel.channel_id);
     }
   };
 
@@ -558,6 +580,16 @@ const ChannelInput = ({ channel }) => {
           </Popover.Content>
         </Popover.Root>
       </InputGroup>
+      {typingText && (
+        <div className="flex items-center gap-1 px-3 pt-1 text-xs text-gray-400">
+          <span className="inline-flex gap-0.5">
+            <span className="animate-bounce [animation-delay:0ms]">.</span>
+            <span className="animate-bounce [animation-delay:150ms]">.</span>
+            <span className="animate-bounce [animation-delay:300ms]">.</span>
+          </span>
+          <span>{typingText}</span>
+        </div>
+      )}
     </div>
   );
 };

@@ -103,6 +103,7 @@ const AuthRoute = ({ children }) => {
       .listen('.message.updated', ChannelsService.handleMessageUpdated)
       .listen('.message.deleted', ChannelsService.handleMessageDeleted)
       .listen('.channel.created', ChannelsService.handleChannelCreated)
+      .listen('.member.typing', ChannelsService.handleMemberTyping)
       .listen('.user.updated', (event) => {
         useUsersStore.getState().setUser(event.user.id, event.user);
       });
@@ -136,6 +137,7 @@ const AuthRoute = ({ children }) => {
           .listen('.role.created', RolesService.handleRoleCreated)
           .listen('.role.updated', RolesService.handleRoleUpdated)
           .listen('.role.deleted', RolesService.handleRoleDeleted)
+          .listen('.member.typing', ChannelsService.handleMemberTyping)
           .listen('.user.updated', (event) => {
             useUsersStore.getState().setUser(event.user.id, event.user);
           });
