@@ -23,6 +23,7 @@ import { GuildContextProvider } from '@/contexts/GuildContext';
 import { useFriendsStore } from '../store/friends.store';
 import { ChannelsService } from '../services/channels.service';
 import { useGuildOrder } from '../hooks/useGuildOrder';
+import { isChannelUnread as checkChannelUnread, getChannelMentionCount as getChannelMentions } from '../utils/unreads.utils';
 
 const SidebarIcon = ({
   icon = '',
@@ -150,32 +151,12 @@ const Sidebar = () => {
   };
 
   const isChannelUnread = useCallback(
-    (channel) => {
-      if (!channel || !channelUnreadsLoaded || !channel.last_message_id) return false;
-
-      const channelUnread = channelUnreads.find(
-        (cu) => String(cu.channel_id) === String(channel.channel_id)
-      );
-      if (!channelUnread) return true;
-
-      const channelLastMessageTimestamp = BigInt(channel.last_message_id) >> 22n;
-      const channelUnreadLastReadTimestamp = BigInt(channelUnread.last_read_message_id) >> 22n;
-
-      return channelLastMessageTimestamp > channelUnreadLastReadTimestamp;
-    },
+    (channel) => checkChannelUnread(channel, channelUnreads, channelUnreadsLoaded),
     [channelUnreads, channelUnreadsLoaded]
   );
 
-  // Get mention count for a specific channel
   const getChannelMentionCount = useCallback(
-    (channelId) => {
-      if (!channelUnreadsLoaded) return 0;
-
-      const channelUnread = channelUnreads.find(
-        (cu) => String(cu.channel_id) === String(channelId)
-      );
-      return channelUnread?.mentioned_message_ids?.length || 0;
-    },
+    (channelId) => getChannelMentions(channelId, channelUnreads, channelUnreadsLoaded),
     [channelUnreads, channelUnreadsLoaded]
   );
 
@@ -200,15 +181,17 @@ const Sidebar = () => {
 
   const isGuildUnread = useCallback(
     (guild) => {
-      const guildChannels = guild.channels || [];
+      const guildChannels = channels.filter(
+        (c) => String(c.guild_id) === String(guild.id) && c.type === 0
+      );
       for (const channel of guildChannels) {
-        if (channel.type === 0 && isChannelUnread(channel)) {
+        if (isChannelUnread(channel)) {
           return true;
         }
       }
       return false;
     },
-    [isChannelUnread]
+    [channels, isChannelUnread]
   );
 
   // Calculate pending friend requests count (incoming requests only)

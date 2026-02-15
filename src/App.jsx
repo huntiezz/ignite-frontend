@@ -144,6 +144,15 @@ const AuthRoute = ({ children }) => {
           .listen('.member.typing', ChannelsService.handleMemberTyping)
           .listen('.user.updated', (event) => {
             useUsersStore.getState().setUser(event.user.id, event.user);
+          })
+          .listen('.voice_state.joined', (event) => {
+            useChannelsStore.getState().updateChannelVoiceState(event.channel_id, event);
+          })
+          .listen('.voice_state.update', (event) => {
+            useChannelsStore.getState().updateChannelVoiceState(event.channel_id, event, false);
+          })
+          .listen('.voice_state.left', (event) => {
+            useChannelsStore.getState().removeUserVoiceState(event.user_id);
           });
 
         // Mark as subscribed

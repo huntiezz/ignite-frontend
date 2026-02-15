@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { GuildsService } from '../services/guilds.service';
 import { EmojisService } from '../services/emojis.service';
 import { useGuildsStore } from '../store/guilds.store';
+import { useNotificationStore } from '../store/notification.store';
 import GuildLayout from '../layouts/GuildLayout';
 import Channel from '../components/Channel/Channel';
 import { ChannelContextProvider } from '../contexts/ChannelContext';
@@ -37,6 +38,12 @@ const GuildChannelPage = () => {
       EmojisService.loadGuildEmojis(guild.id);
     }
   }, [guild?.id]);
+
+  // Track active channel for notification suppression
+  useEffect(() => {
+    useNotificationStore.getState().setActiveChannelId(channelId || null);
+    return () => useNotificationStore.getState().setActiveChannelId(null);
+  }, [channelId]);
 
   // if no channel id in url redirect to first channel
   useEffect(() => {

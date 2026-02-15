@@ -7,6 +7,7 @@ import Channel from '../components/Channel/Channel';
 import DMSidebar from '../components/dm/DMSidebar';
 import FriendsDashboard from '../components/Friends/FriendsDashboard';
 import { useChannelsStore } from '../store/channels.store';
+import { useNotificationStore } from '../store/notification.store';
 
 const DirectMessagesPage = () => {
   const { channelId } = useParams();
@@ -18,6 +19,12 @@ const DirectMessagesPage = () => {
 
   // Find active channel object if we aren't in friends view
   const activeChannel = !isFriendsView ? channels.find((c) => c.channel_id === channelId) : null;
+
+  // Track active channel for notification suppression
+  useEffect(() => {
+    useNotificationStore.getState().setActiveChannelId(channelId || null);
+    return () => useNotificationStore.getState().setActiveChannelId(null);
+  }, [channelId]);
 
   return (
     <DefaultLayout>

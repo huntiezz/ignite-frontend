@@ -22,6 +22,8 @@ type ChannelsStore = {
   removeReaction: (channelId: string, messageId: string, emoji: string, userId: string) => void;
   setMessageReactions: (channelId: string, messageId: string, reactions: Reaction[]) => void;
   togglePin: (channelId: string) => void;
+  updateChannelVoiceState: (channelId: string, voiceState: any, upsert?: boolean) => void;
+  removeUserVoiceState: (userId: string) => void;
 };
 
 export const useChannelsStore = create<ChannelsStore>((set) => ({
@@ -162,4 +164,32 @@ export const useChannelsStore = create<ChannelsStore>((set) => ({
       localStorage.setItem('pinnedChannels', JSON.stringify(newPinned));
       return { pinnedChannelIds: newPinned };
     }),
+  updateChannelVoiceState: (channelId, voiceState, upsert = true) =>
+    set((state) => ({
+      channels: state.channels.map((c) => {
+        if (String(c.channel_id || c.id) !== String(channelId)) return c;
+        const existing = c.voice_states || [];
+        const idx = existing.findIndex(
+          (vs: any) => String(vs.user_id) === String(voiceState.user_id)
+        );
+        if (idx === -1) {
+          if (!upsert) return c;
+          return { ...c, voice_states: [...existing, voiceState] };
+        }
+        const updated = [...existing];
+        updated[idx] = voiceState;
+        return { ...c, voice_states: updated };
+      }),
+    })),
+  removeUserVoiceState: (userId) =>
+    set((state) => ({
+      channels: state.channels.map((c) => {
+        if (!c.voice_states?.length) return c;
+        const filtered = c.voice_states.filter(
+          (vs: any) => String(vs.user_id) !== String(userId)
+        );
+        if (filtered.length === c.voice_states.length) return c;
+        return { ...c, voice_states: filtered };
+      }),
+    })),
 }));

@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/context-menu';
 import { useUnreadsStore } from '@/store/unreads.store';
 import { UnreadsService } from '@/services/unreads.service';
+import { isChannelUnread as checkChannelUnread, getChannelMentionCount as getChannelMentions } from '@/utils/unreads.utils';
 import { ChannelsService } from '@/services/channels.service';
 import { useChannelsStore } from '@/store/channels.store';
 import { useVoiceStore } from '@/store/voice.store';
@@ -302,33 +303,13 @@ const GuildSidebarCategory = ({
     setSortedChannels(filtered);
   }, [channels, category?.channel_id]);
 
-  // Check if channel has unread messages
   const isChannelUnread = useCallback(
-    (channel) => {
-      if (!channel || !channelUnreadsLoaded || !channel.last_message_id) return false;
-
-      const channelUnread = channelUnreads.find(
-        (cu) => String(cu.channel_id) === String(channel.channel_id)
-      );
-      if (!channelUnread) return true;
-
-      const channelLastMessageTimestamp = BigInt(channel.last_message_id) >> 22n;
-      const channelUnreadLastReadTimestamp = BigInt(channelUnread.last_read_message_id) >> 22n;
-
-      return channelLastMessageTimestamp > channelUnreadLastReadTimestamp;
-    },
+    (channel) => checkChannelUnread(channel, channelUnreads, channelUnreadsLoaded),
     [channelUnreads, channelUnreadsLoaded]
   );
 
   const getMentionsCount = useCallback(
-    (channel) => {
-      if (!channelUnreadsLoaded) return 0;
-
-      const channelUnread = channelUnreads.find(
-        (cu) => String(cu.channel_id) === String(channel.channel_id)
-      );
-      return channelUnread?.mentioned_message_ids?.length || 0;
-    },
+    (channel) => getChannelMentions(channel.channel_id, channelUnreads, channelUnreadsLoaded),
     [channelUnreads, channelUnreadsLoaded]
   );
 

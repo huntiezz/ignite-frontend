@@ -22,7 +22,6 @@ const ChannelSection = ({
   onNavigate,
   channelUnreads,
   channelUnreadsLoaded,
-  channelsRaw,
 }) => {
   if (channels.length === 0) return null;
 
@@ -40,7 +39,6 @@ const ChannelSection = ({
             onClick={() => onNavigate(channel.channel_id)}
             channelUnreads={channelUnreads}
             channelUnreadsLoaded={channelUnreadsLoaded}
-            channelsRaw={channelsRaw}
           />
         ))}
       </div>
@@ -106,7 +104,7 @@ const DMSidebar = ({ activeChannelId, onNavigate }) => {
           onNavigate={onNavigate}
           channelUnreads={channelUnreads}
           channelUnreadsLoaded={channelUnreadsLoaded}
-          channelsRaw={channels}
+
         />
 
         <ChannelSection
@@ -116,7 +114,7 @@ const DMSidebar = ({ activeChannelId, onNavigate }) => {
           onNavigate={onNavigate}
           channelUnreads={channelUnreads}
           channelUnreadsLoaded={channelUnreadsLoaded}
-          channelsRaw={channels}
+
         />
       </div>
       <UserBar />

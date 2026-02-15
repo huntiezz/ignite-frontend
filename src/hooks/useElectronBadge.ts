@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useUnreadsStore } from '../store/unreads.store';
 import { useChannelsStore } from '../store/channels.store';
+import { isChannelUnread, getChannelMentionCount, getUnreadMessageCount } from '../utils/unreads.utils';
 
 /**
  * Keeps the Electron taskbar overlay badge in sync with unread state.
@@ -14,6 +15,7 @@ export function useElectronBadge() {
   const channelUnreads = useUnreadsStore((s) => s.channelUnreads);
   const channelUnreadsLoaded = useUnreadsStore((s) => s.channelUnreadsLoaded);
   const channels = useChannelsStore((s) => s.channels);
+  const channelMessages = useChannelsStore((s) => s.channelMessages);
 
   useEffect(() => {
     if (!window.IgniteNative?.setBadgeCount || !channelUnreadsLoaded) return;
@@ -21,20 +23,19 @@ export function useElectronBadge() {
     let totalMentions = 0;
     let hasUnread = false;
 
-    for (const unread of channelUnreads) {
-      totalMentions += unread.mentioned_message_ids?.length || 0;
+    for (const channel of channels) {
+      totalMentions += getChannelMentionCount(channel.channel_id, channelUnreads, channelUnreadsLoaded);
 
-      // Find the matching channel to compare last_message_id vs last_read_message_id
-      const channel = channels.find(
-        (c) => String(c.channel_id) === String(unread.channel_id)
-      );
-
-      if (!channel?.last_message_id || !unread.last_read_message_id) continue;
-
-      const lastMessageTs = BigInt(channel.last_message_id) >> 22n;
-      const lastReadTs = BigInt(unread.last_read_message_id) >> 22n;
-
-      if (lastMessageTs > lastReadTs) {
+      // DM channels (type 1) count their unread messages as mentions
+      const unread = isChannelUnread(channel, channelUnreads, channelUnreadsLoaded);
+      if (unread && channel.type === 1) {
+        const dmUnreadCount = getUnreadMessageCount(
+          channel.channel_id,
+          channelMessages[channel.channel_id] || [],
+          channelUnreads
+        );
+        totalMentions += dmUnreadCount || 1; // fallback to 1 if messages aren't loaded
+      } else if (unread && !hasUnread) {
         hasUnread = true;
       }
     }
@@ -49,5 +50,5 @@ export function useElectronBadge() {
     }
 
     window.IgniteNative.setBadgeCount(badgeCount);
-  }, [channelUnreads, channelUnreadsLoaded, channels]);
+  }, [channelUnreads, channelUnreadsLoaded, channels, channelMessages]);
 }

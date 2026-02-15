@@ -5,42 +5,9 @@ import { useTypingStore } from '../store/typing.store';
 import api from '../api.js';
 import axios from 'axios';
 import useStore from '../hooks/useStore';
-import notificationSound from '../assets/notification.wav';
-
-/**
- * Notification sound — plays once across all tabs, instantly.
- * First tab to receive the event plays it and tells others to skip.
- * If ALL tabs are minimized, one background tab will still play it.
- */
-const notificationAudio = new Audio(notificationSound);
-const notificationChannel =
-  typeof BroadcastChannel !== 'undefined'
-    ? new BroadcastChannel('ignite:notification-sound')
-    : null;
-const recentlyPlayed = new Set<string>();
-
-// When another tab plays the sound, mark that message as handled
-notificationChannel?.addEventListener('message', (event) => {
-  if (event.data?.type === 'played') {
-    recentlyPlayed.add(event.data.id);
-  }
-});
-
-function playNotificationSound(messageId: string) {
-  // Already handled by this or another tab
-  if (recentlyPlayed.has(messageId)) return;
-
-  // Mark as played and tell other tabs immediately
-  recentlyPlayed.add(messageId);
-  notificationChannel?.postMessage({ type: 'played', id: messageId });
-
-  // Play instantly — no delays
-  notificationAudio.currentTime = 0;
-  notificationAudio.play().catch(() => {});
-
-  // Cleanup old IDs after 10s so the set doesn't grow forever
-  setTimeout(() => recentlyPlayed.delete(messageId), 10000);
-}
+import { NotificationService } from './notification.service';
+import { UnreadsService } from './unreads.service';
+import { useNotificationStore } from '../store/notification.store';
 
 export const ChannelsService = {
   /**
@@ -165,7 +132,7 @@ export const ChannelsService = {
     const now = Date.now();
     if (now - (this._lastTypingSent[channelId] || 0) < 1000) return;
     this._lastTypingSent[channelId] = now;
-    await api.post(`channels/${channelId}/typing`).catch(() => {});
+    await api.post(`channels/${channelId}/typing`).catch(() => { });
   },
 
   async sendChannelMessage(channelId: string, content: string, replyTo: string | null = null) {
@@ -258,7 +225,6 @@ export const ChannelsService = {
    * @return void
    */
   handleMessageCreated(event: any) {
-    const { user } = useStore.getState();
     const {
       channels,
       setChannels,
@@ -285,6 +251,13 @@ export const ChannelsService = {
       setChannelMessages(channelId, [...(channelMessages[channelId] || []), event.message]);
     }
 
+    // If we authored this message or are viewing this channel, mark as read immediately
+    const currentUser = useStore.getState().user;
+    const { activeChannelId } = useNotificationStore.getState();
+    if (event.message.author.id === currentUser?.id || activeChannelId === channelId) {
+      UnreadsService.setLastReadMessageId(channelId, event.message.id);
+    }
+
     /**
      * Update last_message_id for the channel
      */
@@ -297,13 +270,8 @@ export const ChannelsService = {
     );
     setChannels(newChannels);
 
-    /**
-     * Play notification sound for incoming messages not sent by the current user.
-     * Coordinated across tabs via BroadcastChannel to prevent doubling.
-     */
-    if (event.message.author.id !== user.id) {
-      playNotificationSound(event.message.id);
-    }
+    // Notify (sound + desktop notification) with guard checks
+    NotificationService.notifyNewMessage(event);
   },
 
   /**

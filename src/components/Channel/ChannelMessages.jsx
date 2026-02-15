@@ -4,6 +4,8 @@ import { useChannelContext } from '../../contexts/ChannelContext.jsx';
 import { useChannelsStore } from '../../store/channels.store';
 import { ChannelsService } from '@/services/channels.service';
 import { UnreadsService } from '@/services/unreads.service';
+import { useUnreadsStore } from '../../store/unreads.store';
+import { isMessageRead } from '@/utils/unreads.utils';
 import MessageList from '../Message/MessageList';
 
 const ChannelMessages = ({ channel }) => {
@@ -55,7 +57,6 @@ const ChannelMessages = ({ channel }) => {
     if (!el) return;
 
     let lastAckTime = 0;
-    let lastAckedMessageId = null;
 
     function checkAndAckAtBottom() {
       const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
@@ -63,13 +64,18 @@ const ChannelMessages = ({ channel }) => {
       if (nearBottom && messages.length > 0) {
         const lastMessageId = messages[messages.length - 1]?.id;
 
-        if (now - lastAckTime > 10000 && lastAckedMessageId !== lastMessageId) {
-          ChannelsService.acknowledgeChannelMessage(channel?.channel_id, lastMessageId);
+        const alreadyRead = isMessageRead(
+          channel.channel_id,
+          lastMessageId,
+          useUnreadsStore.getState().channelUnreads
+        );
+
+        if (!alreadyRead && now - lastAckTime > 10000) {
+          ChannelsService.acknowledgeChannelMessage(channel.channel_id, lastMessageId);
           lastAckTime = now;
-          lastAckedMessageId = lastMessageId;
         }
 
-        UnreadsService.setLastReadMessageId(channel?.channel_id, lastMessageId);
+        UnreadsService.setLastReadMessageId(channel.channel_id, lastMessageId);
       }
     }
 

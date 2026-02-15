@@ -7,6 +7,7 @@ import {
   ContextMenuTrigger,
 } from '../ui/context-menu';
 import { PushPin } from '@phosphor-icons/react';
+import { isChannelUnread } from '@/utils/unreads.utils';
 
 const DMChannelItem = ({
   channel,
@@ -14,30 +15,10 @@ const DMChannelItem = ({
   onClick,
   channelUnreads,
   channelUnreadsLoaded,
-  channelsRaw,
 }) => {
   const { togglePin } = useChannelsStore();
 
-  // Logic to determine if a channel is unread
-  const isUnread = () => {
-    if (!channelUnreadsLoaded) return false;
-    const channelUnread = channelUnreads.find(
-      (cu) => String(cu.channel_id) === String(channel.channel_id)
-    );
-    if (!channelUnread) return false;
-
-    const originalChannel = channelsRaw.find(
-      (c) => String(c.channel_id) == String(channel.channel_id)
-    );
-    if (!originalChannel || !originalChannel.last_message_id) return false;
-
-    const lastMsgTime = BigInt(originalChannel.last_message_id) >> 22n;
-    const lastReadTime = BigInt(channelUnread.last_read_message_id) >> 22n;
-
-    return lastMsgTime > lastReadTime;
-  };
-
-  const unreadState = isUnread();
+  const unreadState = isChannelUnread(channel, channelUnreads, channelUnreadsLoaded);
 
   return (
     <ContextMenu>
