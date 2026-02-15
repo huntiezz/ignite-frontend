@@ -48,6 +48,10 @@ export const UnreadsService = {
   async setLastReadMessageId(channelId: string, messageId: string) {
     const { channelUnreads, setChannelUnreads } = useUnreadsStore.getState();
 
+    // Skip if already up to date
+    const current = channelUnreads.find((u) => u.channel_id === channelId);
+    if (current?.last_read_message_id === messageId) return;
+
     const getTimestamp = (id: string) => BigInt(id) >> 22n;
 
     const messageTimestamp = getTimestamp(messageId);
