@@ -3,13 +3,14 @@ import { useUsersStore } from '../../store/users.store';
 import { useGuildsStore } from '../../store/guilds.store';
 import { useGuildContext } from '../../contexts/GuildContext';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { cn } from '@/lib/utils';
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '../ui/context-menu';
 import GuildMemberPopoverContent from '../GuildMember/GuildMemberPopoverContent';
 import GuildMemberContextMenu from '../GuildMember/GuildMemberContextMenu';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ExternalLink from './ExternalLink.jsx';
-import { convertEmojiShortcodes } from '../../utils/emoji.utils';
+import { convertEmojiShortcodes, convertUnicodeEmojis } from '../../utils/emoji.utils';
 import { useEmojisStore } from '../../store/emojis.store';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -18,12 +19,30 @@ import { visit } from 'unist-util-visit';
 
 const EMOJI_CDN_PREFIX = `${import.meta.env.VITE_CDN_BASE_URL}/emojis/`;
 
-const convertCustomEmojis = (text, emojis) => {
-  if (!emojis || emojis.length === 0) return text;
+const convertCustomEmojis = (text, allGuildEmojis, currentGuildId) => {
+  // Handle global emoji format <id:name>
+  text = text.replace(/<(\d+):([\w_+-]+)>/g, (match, id, name) => {
+    return `![${name}](${EMOJI_CDN_PREFIX}${id})`;
+  });
+
+  if (!allGuildEmojis) return text;
+  
+  // Handle shortcode :name: format
   return text.replace(/:[\w_+-]+:/g, (match) => {
     const name = match.slice(1, -1);
-    const emoji = emojis.find((e) => e.name === name);
-    if (emoji) return `![${name}](${EMOJI_CDN_PREFIX}${emoji.id})`;
+    
+    // Try current guild first
+    const currentEmojis = allGuildEmojis[currentGuildId] || [];
+    const localEmoji = currentEmojis.find((e) => e.name === name);
+    if (localEmoji) return `![${name}](${EMOJI_CDN_PREFIX}${localEmoji.id})`;
+
+    // Try other guilds
+    for (const gid in allGuildEmojis) {
+      if (gid === currentGuildId) continue;
+      const emoji = allGuildEmojis[gid].find((e) => e.name === name);
+      if (emoji) return `![${name}](${EMOJI_CDN_PREFIX}${emoji.id})`;
+    }
+
     return match;
   });
 };
@@ -72,7 +91,7 @@ const remarkMentions = () => {
   };
 };
 
-const MentionText = ({ userId }) => {
+const MentionText = ({ userId, isReply = false }) => {
   const { getUser, users } = useUsersStore();
   const user = useMemo(() => getUser(userId), [userId, getUser, users]);
   const { guildId } = useGuildContext();
@@ -95,6 +114,14 @@ const MentionText = ({ userId }) => {
   }
 
   const mentionStyle = roleColor ? { color: roleColor, backgroundColor: `${roleColor}33` } : {};
+
+  if (isReply) {
+    return (
+      <span className="font-medium" style={{ color: roleColor || 'rgb(148, 156, 247)' }}>
+        {user.name && user.name !== user.username ? `@${user.name}` : `@${user.username}`}
+      </span>
+    );
+  }
 
   return (
     <ContextMenu>
@@ -121,7 +148,7 @@ const MentionText = ({ userId }) => {
   );
 };
 
-const ChannelMention = ({ channelId }) => {
+const ChannelMention = ({ channelId, isReply = false }) => {
   const { guildId } = useGuildContext();
   const guildsStore = useGuildsStore();
   const navigate = useNavigate();
@@ -140,6 +167,14 @@ const ChannelMention = ({ channelId }) => {
     return (
       <span className="cursor-not-allowed rounded bg-gray-800/50 px-1 py-0.5 text-gray-500">
         #unknown-channel
+      </span>
+    );
+  }
+
+  if (isReply) {
+    return (
+      <span className="font-medium text-blue-400">
+        #{channel.name}
       </span>
     );
   }
@@ -171,7 +206,7 @@ const ChannelMention = ({ channelId }) => {
   );
 };
 
-const MessageContent = ({ content }) => {
+const MessageContent = ({ content, isReply = false }) => {
   const { guildId } = useGuildContext();
   const { guildEmojis } = useEmojisStore();
   const emojis = guildEmojis[guildId] || [];
@@ -205,9 +240,10 @@ const MessageContent = ({ content }) => {
               <img
                 src={src}
                 alt={alt}
-                className={`inline object-contain align-text-bottom ${
-                  isTwemoji ? 'h-6 w-6' : 'h-8 w-8'
-                }`}
+                className={cn(
+                  'inline object-contain align-text-bottom',
+                  isReply ? 'h-4 w-4' : isTwemoji ? 'h-6 w-6' : 'h-8 w-8'
+                )}
                 loading="lazy"
               />
             );
@@ -222,17 +258,22 @@ const MessageContent = ({ content }) => {
         a: ({ href, children }) => {
           if (href?.startsWith('mention://user/')) {
             const userId = href.split('/').pop();
-            return <MentionText userId={userId} />;
+            return <MentionText userId={userId} isReply={isReply} />;
           }
           if (href?.startsWith('mention://channel/')) {
             const channelId = href.split('/').pop();
-            return <ChannelMention channelId={channelId} />;
+            return <ChannelMention channelId={channelId} isReply={isReply} />;
+          }
+          if (isReply) {
+            return <span className="font-medium text-blue-400">{children}</span>;
           }
           return href ? <ExternalLink href={href}>{children}</ExternalLink> : <>{children}</>;
         },
       }}
     >
-      {convertEmojiShortcodes(convertCustomEmojis(content, emojis))}
+      {convertUnicodeEmojis(
+        convertEmojiShortcodes(convertCustomEmojis(content, guildEmojis, guildId))
+      )}
     </Markdown>
   );
 };

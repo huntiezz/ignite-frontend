@@ -15,6 +15,7 @@ import { useChannelsStore } from './store/channels.store';
 import { UnreadsService } from './services/unreads.service';
 import { RolesService } from './services/roles.service';
 import { ChannelsService } from './services/channels.service';
+import { EmojisService } from './services/emojis.service';
 import { useUsersStore } from './store/users.store';
 import VoiceAudioRenderer from './components/Voice/VoiceAudioRenderer';
 import { useElectronBadge } from './hooks/useElectronBadge';
@@ -37,8 +38,13 @@ const AuthRoute = ({ children }) => {
   // Sync taskbar badge with unread/mention state (Electron only)
   useElectronBadge();
 
+  const initializing = useRef(false);
+
   useEffect(() => {
     const initialize = async () => {
+      if (initializing.current) return;
+      initializing.current = true;
+
       try {
         const localToken = localStorage.getItem('token');
         if (localToken) {
@@ -49,34 +55,34 @@ const AuthRoute = ({ children }) => {
           if (user?.username) {
             store.login(user, localToken);
 
+            // Load guilds first as emojis depends on them
+            await GuildsService.loadGuilds();
+
             await Promise.all([
-              GuildsService.loadGuilds(),
               FriendsService.loadFriends(),
               FriendsService.loadRequests(),
               UnreadsService.loadUnreads(),
+              EmojisService.loadAllGuildEmojis(),
+              ChannelsService.loadChannels(),
+              RolesService.initializeGuildRoles(),
             ]);
-
-            await ChannelsService.loadChannels();
-            await RolesService.initializeGuildRoles();
           } else {
             localStorage.removeItem('token');
           }
 
           console.log('Initialization complete.');
-          setInitialized(true);
         }
       } catch (error) {
         console.error('Failed to initialize', error);
         setFailed(true);
       } finally {
         setInitialized(true);
+        initializing.current = false;
       }
     };
 
-    if (!initialized) {
-      initialize();
-    }
-  }, [initialized]);
+    initialize();
+  }, [store]);
 
   // Subscribe to user private channel via Echo
   useEffect(() => {
@@ -218,8 +224,13 @@ const PublicRoute = ({ children }) => {
   const store = useStore();
   const [initialized, setInitialized] = useState(false);
 
+  const initializing = useRef(false);
+
   useEffect(() => {
     const initialize = async () => {
+      if (initializing.current) return;
+      initializing.current = true;
+
       try {
         const localToken = localStorage.getItem('token');
         if (localToken) {
@@ -250,10 +261,11 @@ const PublicRoute = ({ children }) => {
       }
 
       setInitialized(true);
+      initializing.current = false;
     };
 
     initialize();
-  }, []);
+  }, [store]);
 
   if (!initialized) {
     return (

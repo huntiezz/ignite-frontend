@@ -24,7 +24,7 @@ const intToHex = (intColor) => {
   return `#${intColor.toString(16).padStart(6, '0')}`;
 };
 
-const GuildMemberContextMenu = ({ user }) => {
+const GuildMemberContextMenu = ({ user, onViewProfile }) => {
   const store = useStore();
   const navigate = useNavigate();
   const { friends, requests } = useFriendsStore();
@@ -34,7 +34,7 @@ const GuildMemberContextMenu = ({ user }) => {
 
   const availableRoles = useMemo(() => {
     return guildRoles[guildId] || [];
-  }, [guildRoles, store.currentGuild]);
+  }, [guildRoles, guildId]);
 
   const member = guildMembers[guildId]?.find((m) => m.user_id === user.id);
 
@@ -69,7 +69,7 @@ const GuildMemberContextMenu = ({ user }) => {
 
     // TODO: Check role hierarchy here
     return true;
-  }, [guildMembers, guildId, store.user.id, availableRoles, userRoles]);
+  }, [guildMembers, guildId, store.user.id, user.id]);
 
   const isFriend = useMemo(() => friends.some((f) => f.id === user.id), [friends, user.id]);
   const hasSentRequest = useMemo(
@@ -93,8 +93,9 @@ const GuildMemberContextMenu = ({ user }) => {
         return;
       }
       try {
-        await api.post('@me/channels', { recipients: [author.id] });
-        navigate('/channels/@me');
+        const res = await api.post('@me/channels', { recipients: [author.id] });
+        const channel = res.data;
+        navigate(`/channels/@me/${channel.channel_id || channel.id}`);
       } catch (error) {
         toast.error(error.response?.data?.message || 'Could not create direct message.');
       }
@@ -111,12 +112,16 @@ const GuildMemberContextMenu = ({ user }) => {
 
   return (
     <>
-      <ContextMenuItem onSelect={() => toast.info('Profile feature coming soon.')}>
+      <ContextMenuItem
+        onSelect={() =>
+          onViewProfile ? onViewProfile() : toast.info('Profile feature coming soon.')
+        }
+      >
         View Profile
       </ContextMenuItem>
 
       {user.id !== store.user.id && (
-        <ContextMenuItem onSelect={() => onSendMessage(user)}>Send Message</ContextMenuItem>
+        <ContextMenuItem onSelect={() => onSendMessage(user)}>Message</ContextMenuItem>
       )}
 
       {user.id !== store.user.id && (
@@ -175,7 +180,7 @@ const GuildMemberContextMenu = ({ user }) => {
             >
               <div className="flex items-center gap-2">
                 <div
-                  className="h-3 w-3 rounded-full"
+                  className="size-3 rounded-full"
                   style={{ backgroundColor: intToHex(role.color) }}
                 />
                 {role.name}
@@ -194,9 +199,15 @@ const GuildMemberContextMenu = ({ user }) => {
         </ContextMenuItem>
       )}
 
-      {/* <ContextMenuItem className="text-red-500" onSelect={() => toast.info('Block feature coming soon.')}>
-        Ban {user.username}
-      </ContextMenuItem> */}
+      <ContextMenuSeparator />
+      <ContextMenuItem
+        onSelect={() => {
+          navigator.clipboard.writeText(user.id);
+          toast.success('Copied User ID');
+        }}
+      >
+        Copy User ID
+      </ContextMenuItem>
     </>
   );
 };

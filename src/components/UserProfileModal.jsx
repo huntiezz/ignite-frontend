@@ -55,19 +55,6 @@ const UserProfileModal = ({ user, open, onOpenChange }) => {
   const isOutgoing = pendingRequest && pendingRequest.sender_id === store.user?.id;
   const isIncoming = pendingRequest && pendingRequest.receiver_id === store.user?.id;
 
-  const guildId = guildContext?.guildId;
-  const member = useMemo(
-    () =>
-      guildId
-        ? (guildsStore.guildMembers[guildId] || []).find((m) => m.user_id === user?.id)
-        : null,
-    [guildId, guildsStore.guildMembers, user?.id]
-  );
-  const roles = member?.roles || user?.roles || [];
-  const sortedRoles = useMemo(
-    () => [...roles].sort((a, b) => (b.position || 0) - (a.position || 0)),
-    [roles]
-  );
 
   if (!user) return null;
 
@@ -128,15 +115,12 @@ const UserProfileModal = ({ user, open, onOpenChange }) => {
     }
   };
 
-  const getRoleColor = (color) => {
-    if (!color || color === 0) return '#5865f2';
-    return typeof color === 'number' ? `#${color.toString(16).padStart(6, '0')}` : color;
-  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl border-white/5 bg-transparent p-0 shadow-2xl [&>button]:hidden">
-        <div className="w-full overflow-hidden rounded-xl border border-white/5 bg-[#111214]">
+      <DialogContent className="max-w-xl border-none bg-transparent p-0 shadow-2xl [&>button]:hidden">
+        <div className="w-full overflow-hidden rounded-xl bg-[#111214]">
           {/* Banner */}
           <div
           className={cn('h-[120px] w-full', !user.banner_color && 'bg-primary')}
@@ -151,10 +135,8 @@ const UserProfileModal = ({ user, open, onOpenChange }) => {
         <div className="relative px-4 pb-4">
           {/* Avatar Area */}
           <div className="absolute -top-[50px] left-4">
-            <div className="rounded-full border-[7px] border-white/5 bg-[#111214]">
-              <Avatar user={user} className="size-[94px] !cursor-default text-4xl" />
-            </div>
-            <div className="absolute bottom-2 right-2 size-6 rounded-full border-[5px] border-white/5 bg-[#23a559]" />
+            <Avatar user={user} className="size-[94px] !cursor-default text-4xl" />
+            <div className="absolute bottom-2 right-2 size-6 rounded-full bg-[#23a559]" />
           </div>
 
           {/* Actions Corner */}
@@ -288,27 +270,6 @@ const UserProfileModal = ({ user, open, onOpenChange }) => {
               </div>
             </div>
 
-            {sortedRoles.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                  Roles
-                </h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {sortedRoles.map((role) => (
-                    <span
-                      key={role.id}
-                      className="flex items-center gap-1.5 rounded bg-[#2b2d31] px-2 py-1 text-[11px] font-bold text-gray-200"
-                    >
-                      <div
-                        className="size-3 rounded-full"
-                        style={{ backgroundColor: getRoleColor(role.color) }}
-                      />
-                      {role.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="space-y-2">
               <h3 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-400">

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 type Emoji = {
   id: string;
@@ -6,20 +7,63 @@ type Emoji = {
   name: string;
 };
 
-type EmojisStore = {
-  guildEmojis: { [guildId: string]: Emoji[] };
-
-  setGuildEmojis: (guildId: string, emojis: Emoji[]) => void;
+type RecentEmoji = {
+  id?: string;
+  label: string;
+  surrogates?: string;
+  url?: string;
+  isCustom: boolean;
 };
 
-export const useEmojisStore = create<EmojisStore>((set) => ({
-  guildEmojis: {},
+type EmojisStore = {
+  guildEmojis: { [guildId: string]: Emoji[] };
+  recentEmojis: RecentEmoji[];
+  setGuildEmojis: (guildId: string, emojis: Emoji[]) => void;
+  addGuildEmoji: (guildId: string, emoji: Emoji) => void;
+  removeGuildEmoji: (guildId: string, emojiId: string) => void;
+  addRecentEmoji: (emoji: RecentEmoji) => void;
+};
 
-  setGuildEmojis: (guildId, emojis) =>
-    set((state) => ({
-      guildEmojis: {
-        ...state.guildEmojis,
-        [guildId]: emojis,
-      },
-    })),
-}));
+export const useEmojisStore = create<EmojisStore>()(
+  persist(
+    (set) => ({
+      guildEmojis: {},
+      recentEmojis: [],
+
+      setGuildEmojis: (guildId, emojis) =>
+        set((state) => ({
+          guildEmojis: {
+            ...state.guildEmojis,
+            [guildId]: emojis,
+          },
+        })),
+
+      addGuildEmoji: (guildId, emoji) =>
+        set((state) => ({
+          guildEmojis: {
+            ...state.guildEmojis,
+            [guildId]: [...(state.guildEmojis[guildId] || []), emoji],
+          },
+        })),
+
+      removeGuildEmoji: (guildId, emojiId) =>
+        set((state) => ({
+          guildEmojis: {
+            ...state.guildEmojis,
+            [guildId]: (state.guildEmojis[guildId] || []).filter((e) => e.id !== emojiId),
+          },
+        })),
+
+      addRecentEmoji: (emoji) =>
+        set((state) => {
+          const filtered = state.recentEmojis.filter((e) => e.label !== emoji.label);
+          const newRecent = [emoji, ...filtered].slice(0, 20);
+          return { recentEmojis: newRecent };
+        }),
+    }),
+    {
+      name: 'ignite-emojis-storage',
+      partialize: (state) => ({ recentEmojis: state.recentEmojis }),
+    }
+  )
+);

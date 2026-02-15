@@ -7,7 +7,7 @@ const Avatar = ({ user, className = 'h-10' }) => {
     />
   ) : (
     <div
-      className={`inline-flex cursor-pointer items-center justify-center rounded-full bg-gray-800 text-gray-300 ${className}`}
+      className={`inline-flex cursor-pointer items-center justify-center rounded-full bg-[#2b2d31] font-semibold text-gray-300 ${className}`}
     >
       {user?.username?.slice(0, 1).toUpperCase()}
     </div>

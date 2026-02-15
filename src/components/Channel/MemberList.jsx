@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { useChannelContext, useChannelInputContext } from '../../contexts/ChannelContext.jsx';
+import { useChannelContext } from '../../contexts/ChannelContext.jsx';
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '../ui/context-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import GuildMemberContextMenu from '../GuildMember/GuildMemberContextMenu.jsx';
 import GuildMemberPopoverContent from '../GuildMember/GuildMemberPopoverContent.jsx';
+import UserProfileModal from '../UserProfileModal.jsx';
 import Avatar from '../Avatar.jsx';
 import { useRolesStore } from '../../store/roles.store.ts';
 import { useGuildsStore } from '@/store/guilds.store.ts';
@@ -12,6 +13,8 @@ import { GuildsService } from '@/services/guilds.service.ts';
 import { CircleNotch, CaretDown, CaretRight } from '@phosphor-icons/react';
 
 const MemberListItem = ({ member }) => {
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const userFromStore = useUsersStore((state) => state.users[member.user.id]);
   const status = userFromStore?.status ?? member.user.status;
 
@@ -31,12 +34,12 @@ const MemberListItem = ({ member }) => {
   }, [member.roles]);
 
   return (
-    <Popover>
+    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
       <ContextMenu>
         <PopoverTrigger className="w-full text-left">
           <ContextMenuTrigger>
             <div className="flex items-center gap-3 rounded-md p-2 transition hover:bg-gray-700/50">
-              <div className="relative flex-shrink-0">
+              <div className="relative shrink-0">
                 <Avatar user={member.user} className="size-8" />
                 {status === 'online' && (
                   <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-white/5 bg-green-500" />
@@ -52,12 +55,34 @@ const MemberListItem = ({ member }) => {
           </ContextMenuTrigger>
         </PopoverTrigger>
         <ContextMenuContent>
-          <GuildMemberContextMenu user={member.user} />
+          <GuildMemberContextMenu
+            user={member.user}
+            onViewProfile={() => {
+              setPopoverOpen(false);
+              setProfileModalOpen(true);
+            }}
+          />
         </ContextMenuContent>
       </ContextMenu>
-      <PopoverContent className="w-auto p-2" align="start" alignOffset={0}>
-        <GuildMemberPopoverContent userId={member.user.id} guild={null} />
+      <PopoverContent
+        className="w-auto border-none bg-transparent p-0 shadow-none"
+        align="start"
+        alignOffset={0}
+      >
+        <GuildMemberPopoverContent
+          userId={member.user.id}
+          guild={null}
+          onOpenProfile={() => {
+            setPopoverOpen(false);
+            setProfileModalOpen(true);
+          }}
+        />
       </PopoverContent>
+      <UserProfileModal
+        user={member.user}
+        open={profileModalOpen}
+        onOpenChange={setProfileModalOpen}
+      />
     </Popover>
   );
 };
@@ -68,7 +93,6 @@ const MemberList = ({ guildId }) => {
   const users = useUsersStore((state) => state.users);
   const [membersByRole, setMembersByRole] = useState({});
   const [membersWithoutRoles, setMembersWithoutRoles] = useState([]);
-  const [offlineMembers, setOfflineMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [collapsedRoles, setCollapsedRoles] = useState({});
 
@@ -82,7 +106,7 @@ const MemberList = ({ guildId }) => {
     GuildsService.loadGuildMembers(guildId).finally(() => setIsLoading(false));
   }, [guildId]);
 
-  const roles = useRolesStore().guildRoles[guildId] || [];
+  const roles = useMemo(() => useRolesStore.getState().guildRoles[guildId] || [], [guildId]);
 
   const toggleRole = useCallback((roleId) => {
     setCollapsedRoles((prev) => ({
@@ -120,7 +144,6 @@ const MemberList = ({ guildId }) => {
 
     setMembersByRole(tempMembersByRole);
     setMembersWithoutRoles(tempMembersWithoutRoles);
-    setOfflineMembers(tempOfflineMembers);
 
     // Auto-collapse groups with more than 100 members
     const autoCollapsed = {};
