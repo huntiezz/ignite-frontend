@@ -1,15 +1,11 @@
-const { app, BrowserWindow, ipcMain, Tray, desktopCapturer, Menu, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, desktopCapturer, Menu, shell, nativeImage } = require('electron');
 const { join } = require('path');
+const fs = require('fs');
 
 let tray = null;
 let mainWindow = null;
 
 const createTray = () => {
-  // Create tray icon - you'll need to add a tray-icon.png file (16x16 or 32x32 recommended)
-  // For now, this will use the default Electron icon if tray-icon.png doesn't exist
-  const { nativeImage } = require('electron');
-  const fs = require('fs');
-
   let iconPath = join(__dirname, 'tray-icon.ico');
 
   // Check if custom icon exists, otherwise create a minimal one from the app icon
@@ -105,6 +101,35 @@ const startCore = () => {
   ipcMain.handle('shell:openExternal', async (_event, url) => {
     if (typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://'))) {
       await shell.openExternal(url);
+    }
+  });
+
+  // Badge overlay for taskbar unread indicators
+  // count 1-10 = mention count badge, 11 = unread but no mentions, 0/null = clear
+  ipcMain.handle('badge:set', (_event, count) => {
+    console.log('[Badge] badge:set called with count:', count);
+    if (!mainWindow) {
+      console.log('[Badge] No mainWindow, skipping');
+      return;
+    }
+
+    if (!count || count <= 0) {
+      console.log('[Badge] Clearing overlay icon');
+      mainWindow.setOverlayIcon(null, '');
+      return;
+    }
+
+    const badgeNum = Math.min(count, 11);
+    const badgePath = join(__dirname, 'assets', 'badges', `badge-${badgeNum}.ico`);
+    console.log('[Badge] Loading badge icon:', badgePath);
+
+    if (fs.existsSync(badgePath)) {
+      const icon = nativeImage.createFromPath(badgePath);
+      const description = badgeNum === 11 ? 'Unread messages' : `${badgeNum} mention${badgeNum > 1 ? 's' : ''}`;
+      console.log('[Badge] Setting overlay icon:', description);
+      mainWindow.setOverlayIcon(icon, description);
+    } else {
+      console.log('[Badge] Badge icon not found at:', badgePath);
     }
   });
 

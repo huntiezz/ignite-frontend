@@ -17,6 +17,7 @@ import { RolesService } from './services/roles.service';
 import { ChannelsService } from './services/channels.service';
 import { useUsersStore } from './store/users.store';
 import VoiceAudioRenderer from './components/Voice/VoiceAudioRenderer';
+import { useElectronBadge } from './hooks/useElectronBadge';
 
 const AuthRoute = ({ children }) => {
   const store = useStore();
@@ -32,6 +33,9 @@ const AuthRoute = ({ children }) => {
 
   // Keep track of active subscriptions to avoid duplicates
   const activeSubscriptions = useRef(new Set());
+
+  // Sync taskbar badge with unread/mention state (Electron only)
+  useElectronBadge();
 
   useEffect(() => {
     const initialize = async () => {
