@@ -13,9 +13,16 @@ import {
   Flag,
 } from 'lucide-react';
 import * as React from 'react';
+import { toast } from 'sonner';
 
 import { cn } from '../../lib/utils';
 import { getTwemojiUrl } from '../../utils/emoji.utils';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from './context-menu';
 
 function EmojiPicker({
   className,
@@ -92,11 +99,14 @@ interface EmojiPickerContentProps
   extends React.ComponentProps<typeof EmojiPickerPrimitive.Viewport> {
   customEmojis?: { id: string; name: string; url: string }[];
   standardEmojis?: Record<string, { names: string[]; surrogates: string }[]>;
-  onEmojiSelect?: (emoji: { label: string; emoji: any; url?: string }) => void;
+  onEmojiSelect?: (emoji: { id?: string; label: string; emoji: any; url?: string }) => void;
   searchValue?: string;
   serverName?: string;
   serverIcon?: string;
   onHoverEmojiChange?: (emoji: { label: string; url: string; isCustom: boolean } | null) => void;
+  recentEmojis?: { id?: string; label: string; surrogates?: string; url?: string; isCustom: boolean }[];
+  onCategoryVisible?: (categoryId: string) => void;
+  activeCategory?: string;
 }
 
 const EmojiButton = React.memo(
@@ -140,9 +150,37 @@ function EmojiPickerContent({
   serverName,
   serverIcon,
   onHoverEmojiChange,
+  recentEmojis = [],
+  onCategoryVisible,
+  activeCategory,
   ...props
 }: EmojiPickerContentProps) {
   const searchLower = searchValue.toLowerCase();
+
+  // Handle intersection observer to detect active category
+  React.useEffect(() => {
+    if (searchValue || !onCategoryVisible) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.find((e) => e.isIntersecting);
+        if (visible) {
+          const id = visible.target.id.replace('category-', '');
+          onCategoryVisible(id);
+        }
+      },
+      {
+        root: document.querySelector('[data-slot="emoji-picker-viewport"]'),
+        threshold: 0,
+        rootMargin: '-50% 0px -50% 0px', // Detect when cross the middle
+      }
+    );
+
+    const categories = document.querySelectorAll('[id^="category-"]');
+    categories.forEach((cat) => observer.observe(cat));
+
+    return () => observer.disconnect();
+  }, [onCategoryVisible, searchValue]);
 
   // Clear hover state when leaving the viewport
   const handleMouseLeave = React.useCallback(() => {
@@ -181,6 +219,72 @@ function EmojiPickerContent({
         data-slot="emoji-picker-viewport"
         {...props}
       >
+        {/* Recent Emojis Section */}
+        {recentEmojis.length > 0 && !searchValue && (
+          <div className="pb-2" id="category-recent">
+            <div
+              className={cn(
+                'sticky top-0 z-10 bg-[#2b2d31] px-2 pt-4 pb-2 text-[12px] font-semibold uppercase transition-colors',
+                activeCategory === 'recent' ? 'text-[#dbdee1]' : 'text-[#949ba4]'
+              )}
+            >
+              Frequently Used
+            </div>
+            <div className="grid grid-cols-9 gap-0.5 px-2">
+              {recentEmojis.map((emoji, index) => (
+                <button
+                  key={`recent-${index}`}
+                  className="flex size-9 items-center justify-center rounded-md transition-colors hover:bg-[#35373c]"
+                  onClick={() =>
+                    onEmojiSelect?.({
+                      label: emoji.label,
+                      emoji: emoji.surrogates,
+                      url: emoji.url,
+                    })
+                  }
+                  onMouseEnter={() =>
+                    onHoverEmojiChange?.({
+                      label: emoji.label,
+                      url: emoji.url || getTwemojiUrl(emoji.surrogates || ''),
+                      isCustom: emoji.isCustom,
+                    })
+                  }
+                >
+                  <ContextMenu>
+                    <ContextMenuTrigger asChild>
+                      <img
+                        src={emoji.url || getTwemojiUrl(emoji.surrogates || '')}
+                        alt={emoji.label}
+                        className="size-6 object-contain"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </ContextMenuTrigger>
+                    {emoji.isCustom && (
+                      <ContextMenuContent className="w-48">
+                        <ContextMenuItem 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            /* backend needed */
+                            // We use the ID stored in the recent emoji object
+                            const id = emoji.id;
+                            if (id) {
+                              navigator.clipboard.writeText(id);
+                              toast.success('Emoji ID copied to clipboard');
+                            }
+                          }}
+                        >
+                          Copy Emoji ID
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    )}
+                  </ContextMenu>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Helper for empty state */}
         {isEmpty && (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500">
@@ -191,7 +295,12 @@ function EmojiPickerContent({
         {/* Custom Emojis Section */}
         {hasCustom && (
           <div className="pb-2" id="category-custom">
-            <div className="sticky top-0 z-10 flex items-center gap-2 bg-[#2b2d31] px-2 pt-4 pb-2 text-[12px] font-semibold uppercase text-[#949ba4]">
+            <div
+              className={cn(
+                'sticky top-0 z-10 flex items-center gap-2 bg-[#2b2d31] px-2 pt-4 pb-2 text-[12px] font-semibold uppercase transition-colors',
+                activeCategory === 'custom' ? 'text-[#dbdee1]' : 'text-[#949ba4]'
+              )}
+            >
               {serverIcon && <img src={serverIcon} className="size-4 rounded-full" />}
               {serverName || 'Server Emojis'}
             </div>
@@ -201,19 +310,35 @@ function EmojiPickerContent({
                   key={emoji.id}
                   className="flex size-9 items-center justify-center rounded-md transition-colors hover:bg-[#35373c]"
                   onClick={() =>
-                    onEmojiSelect?.({ label: emoji.name, emoji: null, url: emoji.url })
+                    onEmojiSelect?.({ id: emoji.id, label: emoji.name, emoji: null, url: emoji.url })
                   }
                   onMouseEnter={() =>
                     onHoverEmojiChange?.({ label: emoji.name, url: emoji.url, isCustom: true })
                   }
                 >
-                  <img
-                    src={emoji.url}
-                    alt={emoji.name}
-                    className="size-6 object-contain"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  <ContextMenu>
+                    <ContextMenuTrigger asChild>
+                      <img
+                        src={emoji.url}
+                        alt={emoji.name}
+                        className="size-6 object-contain"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className="w-48">
+                      <ContextMenuItem 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          /* backend needed */
+                          navigator.clipboard.writeText(emoji.id);
+                          toast.success('Emoji ID copied to clipboard');
+                        }}
+                      >
+                        Copy Emoji ID
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 </button>
               ))}
             </div>
@@ -223,7 +348,12 @@ function EmojiPickerContent({
         {/* Standard Emojis Section */}
         {Object.entries(filteredStandardEmojis).map(([category, emojis]) => (
           <div key={category} id={`category-${category}`} className="pb-2">
-            <div className="sticky top-0 z-10 bg-[#2b2d31] px-2 pt-4 pb-2 text-[12px] font-semibold uppercase text-[#949ba4]">
+            <div
+              className={cn(
+                'sticky top-0 z-10 bg-[#2b2d31] px-2 pt-4 pb-2 text-[12px] font-semibold uppercase transition-colors',
+                activeCategory === category ? 'text-[#dbdee1]' : 'text-[#949ba4]'
+              )}
+            >
               {category.replace(/_/g, ' ')}
             </div>
             <div className="grid grid-cols-9 gap-0.5 px-2">

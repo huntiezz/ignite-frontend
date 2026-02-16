@@ -7,9 +7,17 @@ import {
   EmojiPickerSearch,
   EmojiPickerSidebar,
 } from '../ui/emoji-picker';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '../ui/context-menu';
 import { useChannelInputContext, useChannelContext } from '../../contexts/ChannelContext.jsx';
+import Avatar from '../Avatar.jsx';
+import { cn } from '@/lib/utils';
 import { useChannelsStore } from '../../store/channels.store';
-import { X, Hash, Megaphone, ChatText, SpeakerHigh } from '@phosphor-icons/react';
+import { X, Hash, Megaphone, SpeakerHigh } from '@phosphor-icons/react';
 import { useGuildsStore } from '../../store/guilds.store';
 import { useGuildContext } from '../../contexts/GuildContext';
 import { ChannelType } from '../../enums/ChannelType';
@@ -19,7 +27,6 @@ import { Button } from '../ui/button';
 import {
   Smile,
   Clock,
-  User,
   PawPrint,
   Pizza,
   Trophy,
@@ -29,8 +36,6 @@ import {
   Flag as FlagIcon,
 } from 'lucide-react';
 import { ChannelsService } from '../../services/channels.service';
-import { PermissionsService } from '../../services/permissions.service';
-import { Permissions } from '../../enums/Permissions';
 import { toast } from 'sonner';
 import { emojiMap, registerEmoji, getTwemojiUrl } from '../../utils/emoji.utils';
 import { useEmojisStore } from '../../store/emojis.store';
@@ -273,9 +278,15 @@ const ChannelInput = ({ channel }) => {
   const { guildEmojis } = useEmojisStore();
   const customEmojis = guildEmojis[guildId] || [];
   const currentUser = useStore((s) => s.user);
-  const members = guildsStore.guildMembers[guildId] || [];
-  const guild = guildsStore.guilds.find((g) => g.id === guildId);
-  const channels = guild?.channels || [];
+  const members = useMemo(
+    () => guildsStore.guildMembers[guildId] || [],
+    [guildsStore.guildMembers, guildId]
+  );
+  const guild = useMemo(
+    () => guildsStore.guilds.find((g) => g.id === guildId),
+    [guildsStore.guilds, guildId]
+  );
+  const channels = useMemo(() => guild?.channels || [], [guild?.channels]);
   const channelMessages = useChannelsStore((s) => s.channelMessages);
 
   const typingUsers = useTypingStore((s) => s.typing[channel?.channel_id] || []);
@@ -285,6 +296,20 @@ const ChannelInput = ({ channel }) => {
     const interval = setInterval(clearExpired, 1000);
     return () => clearInterval(interval);
   }, [clearExpired]);
+
+  // Auto-focus the editor when switching channels or replying
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+      // Move cursor to end
+      const range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  }, [channel?.channel_id, replyingId]);
 
   const typingText = useMemo(() => {
     console.log(typingUsers);
@@ -379,36 +404,66 @@ const ChannelInput = ({ channel }) => {
   }, [channels, channelQuery]);
 
   /* ---------------- emojis ---------------- */
+  const { recentEmojis, addRecentEmoji } = useEmojisStore();
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState(
+    recentEmojis.length > 0 ? 'recent' : 'custom'
+  );
+
   const [hoveredEmoji, setHoveredEmoji] = useState(null);
   const [emojiQuery, setEmojiQuery] = useState(null);
   const [emojiSearch, setEmojiSearch] = useState('');
   const [emojiIndex, setEmojiIndex] = useState(0);
+  const [shouldMention] = useState(true);
 
   const filteredEmojis = useMemo(() => {
-    if (!emojiQuery) return [];
+    if (emojiQuery === null) return [];
     const q = emojiQuery.toLowerCase();
 
-    // Custom guild emojis first
-    const results = customEmojis
-      .filter((e) => e.name.toLowerCase().includes(q))
-      .slice(0, SUGGESTIONS_LIMIT)
-      .map((e) => ({
-        shortcode: `:${e.name}:`,
+    const results = [];
+
+    // Collect all unique custom emojis from all available guilds
+    const allCustom = [];
+
+    // Priority 1: Current guild emojis
+    const currentGuildEmojis = guildEmojis[guildId] || [];
+    currentGuildEmojis.forEach((e) => {
+      if (e.name.toLowerCase().includes(q)) {
+        allCustom.push({ ...e, fromCurrent: true });
+      }
+    });
+
+    // Priority 2: Other guilds
+    Object.entries(guildEmojis).forEach(([gid, emojis]) => {
+      if (gid === guildId) return;
+      emojis.forEach((e) => {
+        if (e.name.toLowerCase().includes(q) && !allCustom.find((ac) => ac.id === e.id)) {
+          allCustom.push({ ...e, fromCurrent: false });
+        }
+      });
+    });
+
+    // Map custom emojis to results
+    allCustom.slice(0, SUGGESTIONS_LIMIT).forEach((e) => {
+      results.push({
+        shortcode: e.fromCurrent ? `:${e.name}:` : `<${e.id}:${e.name}>`,
+        displayName: `:${e.name}:`,
+        id: e.id,
         emoji: null,
         custom: true,
         imageUrl: `${import.meta.env.VITE_CDN_BASE_URL}/emojis/${e.id}`,
-      }));
+      });
+    });
 
-    // Fill remaining slots with standard emojis
+    // Priority 3: Standard emojis
     for (const [shortcode, emoji] of emojiMap) {
       if (results.length >= SUGGESTIONS_LIMIT) break;
       if (shortcode.toLowerCase().includes(`:${q}`)) {
-        results.push({ shortcode, emoji, custom: false });
+        results.push({ shortcode, displayName: shortcode, emoji, custom: false });
       }
     }
     return results;
-  }, [emojiQuery, customEmojis]);
+  }, [emojiQuery, guildEmojis, guildId]);
 
   /* ---------------- handlers ---------------- */
 
@@ -565,7 +620,12 @@ const ChannelInput = ({ channel }) => {
     if (!channel?.channel_id || !inputMessage.trim()) return;
     if (inputMessage.length > MAX_MESSAGE_LENGTH) return;
 
-    ChannelsService.sendChannelMessage(channel.channel_id, inputMessage, replyingId || null);
+    ChannelsService.sendChannelMessage(
+      channel.channel_id,
+      inputMessage,
+      replyingId || null,
+      shouldMention
+    );
     setInputMessage('');
     setReplyingId(null);
     editorRef.current.innerHTML = '';
@@ -579,23 +639,36 @@ const ChannelInput = ({ channel }) => {
   /* ---------------- render ---------------- */
 
   return (
-    <div className="bg-gray-[#1a1a1e] px-2 pb-2 pt-2">
-      {replyingMessage && (
-        <div className="flex items-center gap-2 rounded-t-md bg-gray-800 px-3 py-2 text-sm text-gray-300">
-          <span className="shrink-0 text-gray-400">Replying to</span>
-          <span className="shrink-0 font-semibold text-white">
-            {replyingMessage.author.name || replyingMessage.author.username}
-          </span>
-          <span className="truncate text-gray-400">{replyingMessage.content}</span>
-          <button
-            type="button"
-            onClick={() => setReplyingId(null)}
-            className="ml-auto rounded p-0.5 text-gray-400 hover:bg-gray-700 hover:text-gray-200"
-          >
-            <X size={16} />
-          </button>
+    <div className="bg-[#1a1a1e] p-2">
+      <div
+        className={cn(
+          'grid transition-all duration-200 ease-in-out',
+          replyingMessage ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+        )}
+      >
+        <div className="overflow-hidden">
+          {replyingMessage && (
+            <div className="flex items-center justify-between rounded-t-md bg-[#2b2d31] px-4 py-2 text-[12px] text-[#dbdee1]">
+              <div className="flex min-w-0 items-baseline gap-1.5 overflow-hidden">
+                <span className="shrink-0 text-[#b5bac1]">Replying to</span>
+                <span className="shrink-0 cursor-pointer font-bold hover:underline">
+                  {replyingMessage.author.name || replyingMessage.author.username}
+                </span>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setReplyingId(null)}
+                  className="rounded-full bg-black/20 p-0.5 text-[#b5bac1] transition-all hover:bg-black/40 hover:text-[#dbdee1]"
+                >
+                  <X weight="bold" size={14} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
       <style>{`
         [contenteditable][data-placeholder]:empty:before {
           content: attr(data-placeholder);
@@ -603,8 +676,16 @@ const ChannelInput = ({ channel }) => {
           pointer-events: none;
         }
       `}</style>
-      <InputGroup className="relative flex h-auto items-center border border-white/5 bg-[#222327]">
-        <Popover.Root open={!!mentionQuery && filteredMembers.length > 0} modal={false}>
+      <InputGroup
+        className={cn(
+          'relative flex h-auto items-center border border-white/5 bg-[#222327] transition-all duration-200',
+          replyingMessage ? 'rounded-t-none border-t-0' : 'rounded-t-md'
+        )}
+      >
+        <Popover.Root
+          open={mentionQuery !== null && filteredMembers.length > 0 && !isEmojiPickerOpen}
+          modal={false}
+        >
           <Popover.Anchor asChild>
             <div
               ref={editorRef}
@@ -615,7 +696,7 @@ const ChannelInput = ({ channel }) => {
               onKeyUp={saveSelection}
               onClick={saveSelection}
               onPaste={handlePaste}
-              className={`max-h-[50vh] min-h-[44px] w-full overflow-y-auto px-3 py-3 text-sm outline-none ${
+              className={`max-h-[50vh] min-h-[44px] w-full overflow-y-auto p-3 text-sm outline-none ${
                 !canSendMessages ? 'cursor-not-allowed opacity-50' : ''
               }`}
               data-placeholder={
@@ -633,30 +714,38 @@ const ChannelInput = ({ channel }) => {
               side="top"
               align="start"
               onOpenAutoFocus={(e) => e.preventDefault()}
-              className="z-50 w-full rounded bg-gray-800 p-2 shadow"
+              className="z-[1005] rounded bg-[#2b2d31] p-0 shadow-lg"
+              style={{ width: editorRef.current?.parentElement?.offsetWidth ?? 300 }}
             >
-              {filteredMembers.map((m, i) => (
-                <button
-                  key={m.user_id}
-                  className={`flex w-full items-center gap-2 rounded px-2 py-2 text-left ${
-                    i === mentionIndex ? 'bg-gray-700' : 'hover:bg-gray-700/60'
-                  }`}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    replaceAtQueryWithMention(mentionQuery, m, resolveUser);
-                    setMentionQuery(null);
-                    syncValue();
-                  }}
-                >
-                  <div className="flex-1 truncate">{m.user.name}</div>
-                  <div className="text-xs text-gray-400">@{m.user.username}</div>
-                </button>
-              ))}
+              <div className="p-2">
+                <div className="mb-2 px-2 text-xs font-bold uppercase text-gray-400">Members</div>
+                {filteredMembers.map((m, i) => (
+                  <button
+                    key={m.user_id}
+                    className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-gray-200 ${
+                      i === mentionIndex ? 'bg-[#404249]' : 'hover:bg-[#35373c]'
+                    }`}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      replaceAtQueryWithMention(mentionQuery, m, resolveUser);
+                      setMentionQuery(null);
+                      syncValue();
+                    }}
+                  >
+                    <Avatar user={m.user} className="size-6 shrink-0" />
+                    <div className="flex-1 truncate font-medium">{m.user.name}</div>
+                    <div className="text-xs font-normal text-gray-400">@{m.user.username}</div>
+                  </button>
+                ))}
+              </div>
             </Popover.Content>
           </Popover.Portal>
         </Popover.Root>
 
-        <Popover.Root open={channelQuery !== null && filteredChannels.length > 0} modal={false}>
+        <Popover.Root
+          open={channelQuery !== null && filteredChannels.length > 0 && !isEmojiPickerOpen}
+          modal={false}
+        >
           {/* Anchor to the input group roughly, or just absolute full width */}
           <Popover.Anchor className="absolute left-0 top-0 w-full" />
           <Popover.Portal>
@@ -664,7 +753,7 @@ const ChannelInput = ({ channel }) => {
               side="top"
               align="start"
               onOpenAutoFocus={(e) => e.preventDefault()}
-              className="z-50 rounded bg-[#2b2d31] p-0 shadow-lg"
+              className="z-[1005] rounded bg-[#2b2d31] p-0 shadow-lg"
               style={{ width: editorRef.current?.parentElement?.offsetWidth ?? 300 }}
             >
               <div className="p-2">
@@ -704,17 +793,17 @@ const ChannelInput = ({ channel }) => {
           </Popover.Portal>
         </Popover.Root>
 
-        {emojiQuery && filteredEmojis.length > 0 && (
-          <div className="absolute bottom-full left-0 right-0 z-[1001] mb-2 flex max-h-[300px] w-full flex-col rounded border border-white/5 bg-[#2c2f33] shadow-lg">
-            <div className="flex-shrink-0 border-b border-white/5 px-4 py-3 text-xs font-bold uppercase text-[#949ba4]">
+        {emojiQuery !== null && filteredEmojis.length > 0 && !isEmojiPickerOpen && (
+          <div className="absolute inset-x-0 bottom-full z-[1005] mb-2 flex max-h-[300px] w-full flex-col rounded border border-white/5 bg-[#2c2f33] shadow-lg">
+            <div className="shrink-0 border-b border-white/5 px-4 py-3 text-xs font-bold uppercase text-[#949ba4]">
               Emoji matching :{emojiQuery}
             </div>
             <div className="flex-1 overflow-y-auto">
               {filteredEmojis.map((item, i) => (
                 <button
                   key={item.shortcode}
-                  className={`flex w-full items-center gap-3 px-4 py-2 text-left text-sm transition-colors ${
-                    i === emojiIndex ? 'bg-gray-700' : 'hover:bg-gray-700/50'
+                  className={`flex w-full items-center gap-3 bg-gray-700/50 px-4 py-2 text-left text-sm transition-colors ${
+                    i === emojiIndex ? 'bg-gray-700' : ''
                   }`}
                   onMouseDown={(e) => {
                     e.preventDefault();
@@ -723,22 +812,47 @@ const ChannelInput = ({ channel }) => {
                     syncValue();
                   }}
                 >
-                  {item.custom ? (
-                    <img
-                      src={item.imageUrl}
-                      alt={item.shortcode}
-                      className="h-6 w-6 flex-shrink-0 object-contain"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <img
-                      src={getTwemojiUrl(item.emoji)}
-                      alt={item.emoji}
-                      className="h-6 w-6 flex-shrink-0 object-contain"
-                      loading="lazy"
-                    />
-                  )}
-                  <div className="flex-1 truncate font-medium text-gray-200">{item.shortcode}</div>
+                  <div className="flex-1 truncate font-medium text-gray-200">
+                    <ContextMenu>
+                      <ContextMenuTrigger asChild>
+                        <div className="flex w-full cursor-default items-center gap-3">
+                          {item.custom ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.shortcode}
+                              className="size-6 shrink-0 object-contain"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <img
+                              src={getTwemojiUrl(item.emoji)}
+                              alt={item.emoji}
+                              className="size-6 shrink-0 object-contain"
+                              loading="lazy"
+                            />
+                          )}
+                          <div className="flex-1 truncate font-medium text-gray-200">
+                            {item.displayName}
+                          </div>
+                        </div>
+                      </ContextMenuTrigger>
+                      {item.custom && (
+                        <ContextMenuContent className="w-48">
+                          <ContextMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (item.id) {
+                                navigator.clipboard.writeText(item.id);
+                                toast.success('Emoji ID copied to clipboard');
+                              }
+                            }}
+                          >
+                            Copy Emoji ID
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      )}
+                    </ContextMenu>
+                  </div>
                 </button>
               ))}
             </div>
@@ -747,7 +861,10 @@ const ChannelInput = ({ channel }) => {
 
         <Popover.Root open={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen} modal={false}>
           <Popover.Trigger asChild>
-            <Button variant="ghost" className="mr-2 mt-2 h-8 w-8 self-start text-[#b5bac1] hover:text-[#dbdee1]">
+            <Button
+              variant="ghost"
+              className="mr-2 mt-2 size-8 self-start text-[#b5bac1] hover:text-[#dbdee1]"
+            >
               <Smile className="size-5" />
             </Button>
           </Popover.Trigger>
@@ -756,12 +873,13 @@ const ChannelInput = ({ channel }) => {
             align="end"
             sideOffset={8}
             collisionPadding={16}
-            className="flex h-[430px] w-[452px] border-none bg-transparent p-0 shadow-none"
+            className="z-[1000] flex h-[430px] w-[452px] border-none bg-transparent p-0 shadow-none"
           >
-            <EmojiPicker className="flex h-full w-full flex-row">
+            <EmojiPicker className="flex size-full flex-row">
               <EmojiPickerSidebar
-                activeCategory="custom" // Should be dynamic, but defaulting for now
+                activeCategory={activeCategory}
                 onCategorySelect={(id) => {
+                  setActiveCategory(id);
                   const viewport = document.querySelector('[data-slot="emoji-picker-viewport"]');
                   if (!viewport) return;
 
@@ -807,6 +925,8 @@ const ChannelInput = ({ channel }) => {
                 <EmojiPickerContent
                   searchValue={emojiSearch}
                   standardEmojis={emojisData}
+                  recentEmojis={recentEmojis}
+                  onCategoryVisible={setActiveCategory}
                   customEmojis={customEmojis.map((e) => ({
                     id: e.id,
                     name: e.name,
@@ -817,21 +937,24 @@ const ChannelInput = ({ channel }) => {
                   serverIcon={
                     guild?.icon ? `${import.meta.env.VITE_CDN_BASE_URL}/icons/${guild.id}` : null
                   }
-                  onEmojiSelect={({ label, emoji }) => {
+                  onEmojiSelect={({ id, label, emoji, url }) => {
+                    // Record in recent emojis
+                    addRecentEmoji({
+                      id,
+                      label,
+                      surrogates: emoji,
+                      url,
+                      isCustom: !!url,
+                    });
+
                     // Register the emoji in our map for conversion (standard emojis)
                     if (emoji) registerEmoji(label, emoji);
 
                     // Restore focus and selection to the editor
                     restoreSelection();
 
-                    // Convert label to shortcode (:label:)
-                    const shortcode = `:${label}:`;
-                    insertTextAtCaret(shortcode);
-                    syncValue();
-                  }}
-                  onCustomEmojiSelect={({ label }) => {
-                    restoreSelection();
-                    const shortcode = `:${label}:`;
+                    // Convert to shortcode or global ID format
+                    const shortcode = id ? `<${id}:${label}>` : `:${label}:`;
                     insertTextAtCaret(shortcode);
                     syncValue();
                   }}

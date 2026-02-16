@@ -5,6 +5,7 @@ import { GuildsService } from './guilds.service';
 import { ChannelsService } from './channels.service';
 import { FriendsService } from './friends.service';
 import { UnreadsService } from './unreads.service';
+import { EmojisService } from './emojis.service';
 
 export const InvitesService = {
   async getInvitePreview(code) {
@@ -21,6 +22,7 @@ export const InvitesService = {
       await api.post(`/invites/${code}`);
       await GuildsService.loadGuilds();
       await ChannelsService.loadChannels();
+      await EmojisService.loadAllGuildEmojis();
       toast.success('Joined server successfully.');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to join server.');

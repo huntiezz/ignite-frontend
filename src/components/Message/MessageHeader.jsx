@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
-import { Popover, PopoverTrigger } from '../ui/popover';
+import { PopoverTrigger } from '../ui/popover';
 import { Badge } from '../ui/badge';
 import { useGuildsStore } from '../../store/guilds.store';
 import { useGuildContext } from '../../contexts/GuildContext';
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '../ui/context-menu';
+import GuildMemberContextMenu from '../GuildMember/GuildMemberContextMenu';
 
-const MessageHeader = ({ message }) => {
+const MessageHeader = ({ message, onViewProfile }) => {
   const { guildId } = useGuildContext();
   const guildsStore = useGuildsStore();
 
@@ -41,12 +43,19 @@ const MessageHeader = ({ message }) => {
 
   return (
     <div className="relative mb-1 flex justify-start leading-none">
-      <PopoverTrigger>
-        <span className="font-semibold leading-none" style={{ color: authorColor }}>
-          {message?.author.name} {message?.author.is_webhook && <Badge>Webhook</Badge>}{' '}
-          {message?.author.is_bot && <Badge>Bot</Badge>}
-        </span>
-      </PopoverTrigger>
+      <ContextMenu>
+        <ContextMenuTrigger>
+          <PopoverTrigger>
+            <span className="font-semibold leading-none" style={{ color: authorColor }}>
+              {message?.author.name} {message?.author.is_webhook && <Badge>Webhook</Badge>}{' '}
+              {message?.author.is_bot && <Badge>Bot</Badge>}
+            </span>
+          </PopoverTrigger>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <GuildMemberContextMenu user={message.author} onViewProfile={onViewProfile} />
+        </ContextMenuContent>
+      </ContextMenu>
       <p className="ml-2 self-end text-xs font-medium leading-tight text-gray-500">
         {formattedDateTime}
       </p>

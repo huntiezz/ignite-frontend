@@ -4,6 +4,8 @@ import { useChannelsStore } from '../../store/channels.store';
 import { ChannelsService } from '@/services/channels.service';
 import useStore from '../../hooks/useStore';
 
+import { getTwemojiUrl } from '../../utils/emoji.utils';
+
 const MessageReactions = ({ message, channelId }) => {
   const store = useStore();
   const channelReactions = useChannelsStore((s) => s.channelReactions);
@@ -40,7 +42,15 @@ const MessageReactions = ({ message, channelId }) => {
               : 'border-white/5 bg-gray-800 hover:border-white/5 hover:bg-gray-700'
           )}
         >
-          <span className="text-base leading-none">{reaction.emoji}</span>
+          {reaction.emoji.startsWith('http') ? (
+            <img src={reaction.emoji} className="size-4 object-contain" alt="reaction" />
+          ) : (
+            <img
+              src={getTwemojiUrl(reaction.emoji)}
+              className="size-4 object-contain"
+              alt={reaction.emoji}
+            />
+          )}
           <span className="text-xs font-medium text-gray-300">{reaction.count}</span>
         </button>
       ))}

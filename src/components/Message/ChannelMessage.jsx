@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, memo } from 'react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import api from '../../api';
 import useStore from '../../hooks/useStore';
 import { useChannelsStore } from '../../store/channels.store';
@@ -8,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import Avatar from '../Avatar.jsx';
 import GuildMemberContextMenu from '../GuildMember/GuildMemberContextMenu';
 import GuildMemberPopoverContent from '../GuildMember/GuildMemberPopoverContent';
+import UserProfileModal from '../UserProfileModal';
 import MessageContent from '../MessageContent/MessageContent.jsx';
 import MessageHeader from './MessageHeader';
 import MessageEditor from './MessageEditor';
@@ -22,7 +24,9 @@ import { useChannelContext } from '../../contexts/ChannelContext.jsx';
 const ChannelMessage = memo(
   ({ message, prevMessage, allMessages, pending, isEditing, setEditingId, guildId }) => {
     const store = useStore();
-    const { setReplyingId } = useChannelContext();
+    const [profileModalOpen, setProfileModalOpen] = useState(false);
+    const [popoverOpen, setPopoverOpen] = useState(false);
+    const { setReplyingId, replyingId } = useChannelContext();
     const channelId = message.channel_id;
 
     const hasReply = message.message_references?.length > 0;
@@ -58,6 +62,8 @@ const ChannelMessage = memo(
       return message.mentions.some((mention) => mention.user_id === store.user.id);
     }, [message.mentions, store.user?.id]);
 
+    const isReplyingTo = replyingId === message.id;
+
     const handleSaveEdit = useCallback(
       async (editedContent) => {
         try {
@@ -92,120 +98,160 @@ const ChannelMessage = memo(
       }
     }, [channelId, message.id]);
 
-    const messageClasses = `group relative block py-1 data-[state=open]:bg-gray-800/60 ${
-      isEditing
-        ? 'bg-gray-800/60'
-        : isMentioned
-          ? 'bg-yellow-900/20 hover:bg-yellow-900/30 border-l-4 border-yellow-600'
-          : 'hover:bg-gray-800/60'
-    } ${shouldStack ? '' : 'mt-3.5'}`;
+    const messageClasses = cn(
+      'group relative block py-1 transition-all duration-200',
+      shouldStack ? '' : 'mt-3.5',
+      isEditing && 'bg-[#404249]/40',
+      isReplyingTo && 'bg-primary/10 border-l-[4px] border-primary z-10',
+      isMentioned && !isReplyingTo && 'bg-yellow-500/10 border-l-[4px] border-yellow-500/80',
+      !isEditing && !isReplyingTo && !isMentioned && 'hover:bg-gray-800/40'
+    );
 
     return (
-      <Popover>
-        <ContextMenu>
-          <ContextMenuTrigger className={messageClasses}>
-            {hasReply && (
-              <div className="flex items-start gap-2 px-4">
-                <div className="mt-2 flex w-10">
-                  <svg
-                    width="33"
-                    height="20"
-                    viewBox="0 0 33 20"
-                    fill="none"
-                    className="text-gray-500"
-                  >
-                    <path
-                      d="M17 15V10C17 5.58172 20.5817 2 25 2H33"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
+      <>
+        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+          <ContextMenu>
+            <ContextMenuTrigger className={messageClasses}>
+              {hasReply && (
+                <div className="flex items-start gap-2 px-4">
+                  <div className="mt-2 flex w-10">
+                    <svg
+                      width="33"
+                      height="20"
+                      viewBox="0 0 33 20"
                       fill="none"
-                    />
-                  </svg>
-                </div>
-                <MessageReplyBar referenceMessageId={replyMessageId} messages={allMessages} />
-              </div>
-            )}
-            <div className="flex items-start gap-4 px-4">
-              {shouldStack ? (
-                <div className="w-10" />
-              ) : hasReply ? (
-                <ContextMenu>
-                  <PopoverTrigger>
-                    <ContextMenuTrigger>
-                      <Avatar user={message.author} className="size-10" />
-                    </ContextMenuTrigger>
-                    <ContextMenuContent>
-                      <GuildMemberContextMenu user={message.author} />
-                    </ContextMenuContent>
-                  </PopoverTrigger>
-                </ContextMenu>
-              ) : (
-                <ContextMenu>
-                  <PopoverTrigger>
-                    <ContextMenuTrigger>
-                      <Avatar user={message.author} className="size-10" />
-                    </ContextMenuTrigger>
-                    <ContextMenuContent>
-                      <GuildMemberContextMenu user={message.author} />
-                    </ContextMenuContent>
-                  </PopoverTrigger>
-                </ContextMenu>
-              )}
-
-              <div className="flex flex-1 flex-col items-start justify-start">
-                {!shouldStack && <MessageHeader message={message} />}
-
-                {isEditing ? (
-                  <MessageEditor
-                    initialContent={message.content}
-                    onSave={handleSaveEdit}
-                    onCancel={() => setEditingId(null)}
-                  />
-                ) : (
-                  <div
-                    className={`whitespace-pre-wrap break-words break-all text-gray-400 ${pending ? 'opacity-50' : ''}`}
-                  >
-                    <MessageContent content={message.content} />
-                    {message.updated_at && message.created_at !== message.updated_at && (
-                      <span className="ml-1 text-[0.65rem] text-gray-500">(edited)</span>
-                    )}
+                      className="text-gray-500"
+                    >
+                      <path
+                        d="M17 15V10C17 5.58172 20.5817 2 25 2H33"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        fill="none"
+                      />
+                    </svg>
                   </div>
+                  <MessageReplyBar referenceMessageId={replyMessageId} messages={allMessages} />
+                </div>
+              )}
+              <div className="flex items-start gap-4 px-4">
+                {shouldStack ? (
+                  <div className="w-10" />
+                ) : hasReply ? (
+                  <ContextMenu>
+                    <PopoverTrigger>
+                      <ContextMenuTrigger>
+                        <Avatar user={message.author} className="size-10" />
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <GuildMemberContextMenu
+                          user={message.author}
+                          onViewProfile={() => {
+                            setPopoverOpen(false);
+                            setProfileModalOpen(true);
+                          }}
+                        />
+                      </ContextMenuContent>
+                    </PopoverTrigger>
+                  </ContextMenu>
+                ) : (
+                  <ContextMenu>
+                    <PopoverTrigger>
+                      <ContextMenuTrigger>
+                        <Avatar user={message.author} className="size-10" />
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <GuildMemberContextMenu
+                          user={message.author}
+                          onViewProfile={() => {
+                            setPopoverOpen(false);
+                            setProfileModalOpen(true);
+                          }}
+                        />
+                      </ContextMenuContent>
+                    </PopoverTrigger>
+                  </ContextMenu>
                 )}
 
-                <MessageReactions message={message} channelId={channelId} />
+                <div className="flex flex-1 flex-col items-start justify-start">
+                  {!shouldStack && (
+                    <MessageHeader
+                      message={message}
+                      onViewProfile={() => {
+                        setPopoverOpen(false);
+                        setProfileModalOpen(true);
+                      }}
+                    />
+                  )}
+
+                  {isEditing ? (
+                    <MessageEditor
+                      initialContent={message.content}
+                      onSave={handleSaveEdit}
+                      onCancel={() => setEditingId(null)}
+                    />
+                  ) : (
+                    <div
+                      className={`whitespace-pre-wrap break-words text-gray-400 ${pending ? 'opacity-50' : ''}`}
+                    >
+                      <MessageContent content={message.content} />
+                      {message.updated_at && message.created_at !== message.updated_at && (
+                        <span className="ml-1 text-[0.65rem] text-gray-500">(edited)</span>
+                      )}
+                    </div>
+                  )}
+
+                  <MessageReactions message={message} channelId={channelId} />
+                </div>
               </div>
-            </div>
 
-            {!isEditing && !pending && (
-              <MessageActions
-                message={message}
-                channelId={channelId}
-                canEdit={canEdit}
-                canDelete={canDelete}
-                onEdit={() => setEditingId(message.id)}
-                onDelete={handleDelete}
-                onReply={() => setReplyingId(message.id)}
-              />
-            )}
-          </ContextMenuTrigger>
+              {!isEditing && !pending && (
+                <MessageActions
+                  message={message}
+                  channelId={channelId}
+                  canEdit={canEdit}
+                  canDelete={canDelete}
+                  onEdit={() => setEditingId(message.id)}
+                  onDelete={handleDelete}
+                  onReply={() => setReplyingId(message.id)}
+                />
+              )}
+            </ContextMenuTrigger>
 
-          <MessageContextMenu
-            message={message}
-            canEdit={canEdit}
-            canDelete={canDelete}
-            onEdit={() => setEditingId(message.id)}
-            onDelete={handleDelete}
-            onReply={() => setReplyingId(message.id)}
-          />
-        </ContextMenu>
+            <MessageContextMenu
+              message={message}
+              canEdit={canEdit}
+              canDelete={canDelete}
+              onEdit={() => setEditingId(message.id)}
+              onDelete={handleDelete}
+              onReply={() => setReplyingId(message.id)}
+            />
+          </ContextMenu>
 
-        <PopoverContent className="w-auto p-2" align="start" alignOffset={0}>
-          <GuildMemberPopoverContent userId={message.author.id} guild={null} />
-        </PopoverContent>
-      </Popover>
+          <PopoverContent
+            className="w-auto border-none bg-transparent p-0 shadow-none"
+            align="start"
+            alignOffset={0}
+          >
+            <GuildMemberPopoverContent
+              userId={message.author.id}
+              guild={null}
+              onOpenProfile={() => {
+                setPopoverOpen(false);
+                setProfileModalOpen(true);
+              }}
+            />
+          </PopoverContent>
+        </Popover>
+        <UserProfileModal
+          user={message.author}
+          open={profileModalOpen}
+          onOpenChange={setProfileModalOpen}
+        />
+      </>
     );
   }
 );
 
+ChannelMessage.displayName = 'ChannelMessage';
 export default ChannelMessage;
