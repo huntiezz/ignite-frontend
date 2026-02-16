@@ -1,52 +1,171 @@
-import { Gear } from '@phosphor-icons/react';
-import useStore from '../hooks/useStore';
+import {
+  Gear,
+  Microphone,
+  MicrophoneSlash,
+  SpeakerHigh,
+  SpeakerSlash,
+  PhoneDisconnect,
+  WifiHigh,
+  VideoCamera,
+  VideoCameraSlash,
+  Monitor,
+} from '@phosphor-icons/react';
+import { useAuthStore } from '@/store/auth.store';
 import { Dialog, DialogTrigger } from './ui/dialog';
 import UserSettingsDialogContent from './UserSettingsDialogContent';
 import { LogOut } from 'lucide-react';
 import Avatar from './Avatar';
+import { useVoiceStore } from '@/store/voice.store';
+import { useUsersStore } from '@/store/users.store';
+import { VoiceService } from '@/services/voice.service';
 
 const UserBar = () => {
-  const store = useStore();
+  const { logout } = useAuthStore();
+  const { channelName, connectionState, isMuted, isDeafened, isCameraOn, isScreenSharing } =
+    useVoiceStore();
+  const user = useUsersStore((state) => state.getCurrentUser());
+
+  const isConnected = connectionState !== 'disconnected';
 
   return (
-    <div className="flex items-center border-t border-white/5 bg-[#202024] px-2 py-2">
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <div className="relative shrink-0">
-          <Avatar user={store.user} className="size-8" />
-          {store.user?.status !== 'offline' && (
-            <div className="absolute -bottom-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-[#202024]">
-              <div className="size-2.5 rounded-full bg-green-600"></div>
+    <div className="border-t border-white/5 bg-[#202024]">
+      {/* Voice Channel Panel - Only show when connected */}
+      {isConnected && (
+        <div className="border-b border-white/5 bg-[#1a1a1d] px-2 py-2">
+          <div className="mb-2 flex items-center gap-2">
+            <WifiHigh className="size-4 shrink-0 text-green-500" weight="bold" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold text-green-500">
+                {connectionState === 'connecting' ? 'Connecting...' : 'Voice Connected'}
+              </p>
+              <p className="truncate text-[11px] text-gray-400">{channelName}</p>
             </div>
-          )}
-        </div>
-        <div className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-semibold text-gray-100">{store.user?.name}</span>
-          <span className="truncate text-[11px] text-gray-500">
-            {store.user?.status || 'Online'}
-          </span>
-        </div>
-      </div>
+          </div>
 
-      <div className="flex shrink-0 items-center">
-        <button
-          type="button"
-          onClick={() => store.logout()}
-          className="flex size-8 items-center justify-center rounded hover:bg-gray-700"
-        >
-          <LogOut className="size-4 text-gray-400 hover:text-gray-200" />
-        </button>
-
-        <Dialog>
-          <DialogTrigger asChild>
+          {/* Voice Control Buttons */}
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
-              className="flex size-8 items-center justify-center rounded hover:bg-gray-700"
+              onClick={() => VoiceService.toggleCamera()}
+              className={`flex flex-1 items-center justify-center gap-2 rounded py-2 px-3 text-sm font-medium transition-colors ${
+                isCameraOn
+                  ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                  : 'bg-[#2a2a2d] text-gray-300 hover:bg-[#35353a]'
+              }`}
+              title={isCameraOn ? 'Turn Off Camera' : 'Turn On Camera'}
             >
-              <Gear className="size-4 text-gray-400 hover:text-gray-200" weight="fill" />
+              {isCameraOn ? (
+                <VideoCamera className="size-5" weight="fill" />
+              ) : (
+                <VideoCameraSlash className="size-5" weight="fill" />
+              )}
+              <span>{isCameraOn ? 'Camera' : 'Camera'}</span>
             </button>
-          </DialogTrigger>
-          <UserSettingsDialogContent />
-        </Dialog>
+
+            <button
+              type="button"
+              onClick={() => VoiceService.toggleScreenShare()}
+              className={`flex flex-1 items-center justify-center gap-2 rounded py-2 px-3 text-sm font-medium transition-colors ${
+                isScreenSharing
+                  ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                  : 'bg-[#2a2a2d] text-gray-300 hover:bg-[#35353a]'
+              }`}
+              title={isScreenSharing ? 'Stop Sharing' : 'Share Screen'}
+            >
+              <Monitor className="size-5" weight="fill" />
+              <span>Screen</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => VoiceService.leaveVoiceChannel()}
+              className="flex size-9 shrink-0 items-center justify-center rounded bg-[#2a2a2d] text-gray-300 transition-colors hover:bg-red-500/20 hover:text-red-400"
+              title="Disconnect"
+            >
+              <PhoneDisconnect className="size-5" weight="fill" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* User Info Bar */}
+      <div className="flex items-center px-2 py-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <div className="relative shrink-0">
+            <Avatar user={user} className="size-8" />
+            {user?.status !== 'offline' && (
+              <div className="absolute -bottom-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-[#202024]">
+                <div className="size-2.5 rounded-full bg-green-600"></div>
+              </div>
+            )}
+          </div>
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-sm font-semibold text-gray-100">
+              {user?.name}
+            </span>
+            <span className="truncate text-[11px] text-gray-500">
+              {user?.status || 'Online'}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => VoiceService.toggleMute()}
+            className={`flex size-8 items-center justify-center rounded transition-colors ${
+              isMuted
+                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                : 'hover:bg-white/5'
+            }`}
+            title={isMuted ? 'Unmute' : 'Mute'}
+          >
+            {isMuted ? (
+              <MicrophoneSlash className="size-4 text-red-400" weight="fill" />
+            ) : (
+              <Microphone className="size-4 text-gray-400 hover:text-gray-200" weight="fill" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => VoiceService.toggleDeafen()}
+            className={`flex size-8 items-center justify-center rounded transition-colors ${
+              isDeafened
+                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                : 'hover:bg-white/5'
+            }`}
+            title={isDeafened ? 'Undeafen' : 'Deafen'}
+          >
+            {isDeafened ? (
+              <SpeakerSlash className="size-4 text-red-400" weight="fill" />
+            ) : (
+              <SpeakerHigh className="size-4 text-gray-400 hover:text-gray-200" weight="fill" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => logout()}
+            className="flex size-8 items-center justify-center rounded hover:bg-white/5"
+            title="Logout"
+          >
+            <LogOut className="size-4 text-gray-400 hover:text-gray-200" />
+          </button>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <button
+                type="button"
+                className="flex size-8 items-center justify-center rounded hover:bg-white/5"
+                title="User Settings"
+              >
+                <Gear className="size-4 text-gray-400 hover:text-gray-200" weight="fill" />
+              </button>
+            </DialogTrigger>
+            <UserSettingsDialogContent />
+          </Dialog>
+        </div>
       </div>
     </div>
   );

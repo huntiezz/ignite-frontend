@@ -1,175 +1,62 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
-import useStore from './hooks/useStore';
-import api from './api';
+import { useAuthStore } from './store/auth.store';
 import PageTitle from './components/PageTitle';
 import LoginPage from './pages/Login';
 import RegisterPage from './pages/Register';
 import DirectMessagesPage from './pages/DirectMessages';
 import GuildChannelPage from './pages/GuildChannel';
 import InvitePage from './pages/InvitePage';
-import { GuildsService } from './services/guilds.service';
-import { FriendsService } from './services/friends.service';
+import { InitializationService } from './services/initialization.service';
+import { EchoService } from './services/echo.service';
 import { useGuildsStore } from './store/guilds.store';
-import { useChannelsStore } from './store/channels.store';
-import { UnreadsService } from './services/unreads.service';
-import { RolesService } from './services/roles.service';
-import { ChannelsService } from './services/channels.service';
-import { useUsersStore } from './store/users.store';
 import VoiceAudioRenderer from './components/Voice/VoiceAudioRenderer';
 import { useElectronBadge } from './hooks/useElectronBadge';
 
 const AuthRoute = ({ children }) => {
-  const store = useStore();
+  const { userId } = useAuthStore();
+  const { guilds } = useGuildsStore();
 
   const [initialized, setInitialized] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  // Get guilds from the store
-  const { guilds } = useGuildsStore();
-
-  // Get channels from the store
-  const { channels } = useChannelsStore();
-
-  // Keep track of active subscriptions to avoid duplicates
-  const activeSubscriptions = useRef(new Set());
-
   // Sync taskbar badge with unread/mention state (Electron only)
   useElectronBadge();
 
+  // Initialize app on mount
   useEffect(() => {
-    const initialize = async () => {
-      try {
-        const localToken = localStorage.getItem('token');
-        if (localToken) {
-          const { data: user } = await api.get('@me', {
-            headers: { Authorization: `Bearer ${localToken}` },
-          });
+    const init = async () => {
+      const result = await InitializationService.initialize();
 
-          if (user?.username) {
-            store.login(user, localToken);
-
-            await Promise.all([
-              GuildsService.loadGuilds(),
-              FriendsService.loadFriends(),
-              FriendsService.loadRequests(),
-              UnreadsService.loadUnreads(),
-            ]);
-
-            await ChannelsService.loadChannels();
-            await RolesService.initializeGuildRoles();
-          } else {
-            localStorage.removeItem('token');
-          }
-
-          console.log('Initialization complete.');
-          setInitialized(true);
-        }
-      } catch (error) {
-        console.error('Failed to initialize', error);
+      if (result.error) {
         setFailed(true);
-      } finally {
-        setInitialized(true);
       }
+
+      setInitialized(true);
     };
 
-    if (!initialized) {
-      initialize();
-    }
-  }, [initialized]);
+    init();
+  }, []);
 
   // Subscribe to user private channel via Echo
   useEffect(() => {
-    if (!initialized || !store.user) return;
+    if (!initialized || !userId) return;
 
-    // Subsribe to the user private channel via Echo
-    console.log(`Subscribing to private.user.${store.user.id}`);
-
-    window.Echo.private(`user.${store.user.id}`)
-      .listen('.friendrequest.created', (event) => {
-        console.log('Received friend request event:', event);
-        FriendsService.loadRequests();
-      })
-      .listen('.friendrequest.deleted', (event) => {
-        console.log('Friend request deleted event:', event);
-        FriendsService.loadRequests();
-      })
-      .listen('.friendrequest.accepted', (event) => {
-        console.log('Friend request accepted event:', event);
-        FriendsService.loadFriends();
-        FriendsService.loadRequests();
-      })
-      .listen('.unread.updated', (event) => {
-        console.log('Unread updated event:', event);
-        UnreadsService.updateUnread(event.unread.channel_id, event.unread);
-      })
-      .listen('.message.created', ChannelsService.handleMessageCreated)
-      .listen('.message.updated', ChannelsService.handleMessageUpdated)
-      .listen('.message.deleted', ChannelsService.handleMessageDeleted)
-      .listen('.channel.created', ChannelsService.handleChannelCreated)
-      .listen('.member.typing', ChannelsService.handleMemberTyping)
-      .listen('.user.updated', (event) => {
-        useUsersStore.getState().setUser(event.user.id, event.user);
-      });
-  }, [initialized, store.user]);
-
-  // Subscribe to all channels via Echo
-  useEffect(() => {
-    if (!initialized || !store.user) return;
-
-    // Subscribe to all guilds via Echo
-    guilds.forEach((guild) => {
-      const guildId = guild.id;
-
-      // Only subscribe if we haven't already
-      if (!activeSubscriptions.current.has(guildId)) {
-        console.log(`Subscribing to new guild: ${guildId}`);
-
-        window.Echo.private(`guild.${guildId}`)
-          .listen('.member.joined', (event) => {
-            GuildsService.addGuildMemberToStore(guildId, event.member);
-          })
-          .listen('.member.updated', (event) => {
-            GuildsService.updateGuildMemberInStore(guildId, event.member.user_id, event.member);
-          })
-          .listen('.member.left', (event) => {
-            GuildsService.deleteGuildMemberFromStore(guildId, event.member.user_id);
-          })
-          .listen('.message.created', ChannelsService.handleMessageCreated)
-          .listen('.message.updated', ChannelsService.handleMessageUpdated)
-          .listen('.message.deleted', ChannelsService.handleMessageDeleted)
-          .listen('.role.created', RolesService.handleRoleCreated)
-          .listen('.role.updated', RolesService.handleRoleUpdated)
-          .listen('.role.deleted', RolesService.handleRoleDeleted)
-          .listen('.member.typing', ChannelsService.handleMemberTyping)
-          .listen('.user.updated', (event) => {
-            useUsersStore.getState().setUser(event.user.id, event.user);
-          })
-          .listen('.voice_state.joined', (event) => {
-            if (event.voice_state.user_id == store.user.id) return;
-
-            useChannelsStore.getState().updateChannelVoiceState(event.channel_id, event);
-          })
-          .listen('.voice_state.update', (event) => {
-            if (event.voice_state.user_id == store.user.id) return;
-            
-            useChannelsStore.getState().updateChannelVoiceState(event.channel_id, event, false);
-          })
-          .listen('.voice_state.left', (event) => {
-            if (event.voice_state.user_id == store.user.id) return;
-
-            useChannelsStore.getState().removeUserVoiceState(event.user_id);
-          });
-
-        // Mark as subscribed
-        activeSubscriptions.current.add(guildId);
-      }
-    });
+    EchoService.subscribeToUserChannel(userId);
 
     return () => {
-      // Logic to leave Echo channels if needed
+      if (userId) {
+        EchoService.unsubscribeFromUserChannel(userId);
+      }
     };
-  }, [guilds, channels, initialized, store.user]);
+  }, [initialized, userId]);
+
+  // Subscribe to guild channels via Echo
+  useEffect(() => {
+    if (!initialized || !userId || guilds.length === 0) return;
+
+    EchoService.subscribeToGuilds(guilds);
+  }, [guilds, initialized, userId]);
 
   if (failed) {
     // If we initialization failed, show an error message with a retry button
@@ -199,7 +86,7 @@ const AuthRoute = ({ children }) => {
     );
   }
 
-  if (!store.user) {
+  if (!userId) {
     return <Navigate to="/login" replace />;
   }
 
@@ -215,34 +102,12 @@ const GuestRoute = ({ children }) => {
 };
 
 const PublicRoute = ({ children }) => {
-  const store = useStore();
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    const initialize = async () => {
+    const init = async () => {
       try {
-        const localToken = localStorage.getItem('token');
-        if (localToken) {
-          const { data: user } = await api.get('@me', {
-            headers: { Authorization: `Bearer ${localToken}` },
-          });
-
-          if (user?.username) {
-            store.login(user, localToken);
-
-            await Promise.all([
-              GuildsService.loadGuilds(),
-              FriendsService.loadFriends(),
-              FriendsService.loadRequests(),
-              UnreadsService.loadUnreads(),
-            ]);
-
-            await ChannelsService.loadChannels();
-            await RolesService.initializeGuildRoles();
-          } else {
-            localStorage.removeItem('token');
-          }
-        }
+        await InitializationService.initialize();
       } catch (error) {
         console.error('Failed to initialize on public route', error);
         // Remove invalid token but don't prevent access
@@ -252,7 +117,7 @@ const PublicRoute = ({ children }) => {
       setInitialized(true);
     };
 
-    initialize();
+    init();
   }, []);
 
   if (!initialized) {
@@ -267,7 +132,7 @@ const PublicRoute = ({ children }) => {
 };
 
 function App() {
-  const store = useStore();
+  const { userId } = useAuthStore();
   const { pathname } = useLocation();
 
   useEffect(() => {
@@ -295,9 +160,7 @@ function App() {
       <Routes>
         <Route
           index
-          element={
-            store.user ? <Navigate to="/channels/@me" replace /> : <Navigate to="/login" replace />
-          }
+          element={userId ? <Navigate to="/channels/@me" replace /> : <Navigate to="/login" replace />}
         />
         <Route element={<PublicRoute />}>
           <Route

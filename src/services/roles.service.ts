@@ -210,4 +210,22 @@ export const RolesService = {
     const roles = guildRoles[guildId] || [];
     setGuildRoles(guildId, [...roles, role]);
   },
+
+  handleRoleUpdated(event: any) {
+    const { role } = event;
+    const guildId = role.guild_id;
+    const { guildRoles, setGuildRoles } = useRolesStore.getState();
+    const roles = guildRoles[guildId] || [];
+    const updatedRoles = roles.map((r) => (r.id === role.id ? role : r));
+    setGuildRoles(guildId, updatedRoles);
+  },
+
+  handleRoleDeleted(event: any) {
+    const { role } = event;
+    const guildId = role.guild_id;
+    const { guildRoles, setGuildRoles } = useRolesStore.getState();
+    const roles = guildRoles[guildId] || [];
+    const updatedRoles = roles.filter((r) => r.id !== role.id);
+    setGuildRoles(guildId, updatedRoles);
+  },
 };

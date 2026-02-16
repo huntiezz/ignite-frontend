@@ -659,7 +659,6 @@ const GuildSidebar = ({
                 />
               ))}
             </div>
-            <VoiceControls />
             <UserBar />
           </div>
         </ContextMenuTrigger>
