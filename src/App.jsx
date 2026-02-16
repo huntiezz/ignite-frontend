@@ -104,6 +104,8 @@ const GuestRoute = ({ children }) => {
 const PublicRoute = ({ children }) => {
   const [initialized, setInitialized] = useState(false);
 
+  const initializing = useRef(false);
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -115,6 +117,7 @@ const PublicRoute = ({ children }) => {
       }
 
       setInitialized(true);
+      initializing.current = false;
     };
 
     init();

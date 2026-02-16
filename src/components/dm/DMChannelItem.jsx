@@ -5,6 +5,7 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
+  ContextMenuSeparator,
 } from '../ui/context-menu';
 import { PushPin } from '@phosphor-icons/react';
 import { isChannelUnread } from '@/utils/unreads.utils';
@@ -53,6 +54,15 @@ const DMChannelItem = ({
             {channel.isPinned ? 'Unpin' : 'Pin'}
             <PushPin size={14} className={channel.isPinned ? '' : 'rotate-45'} />
           </div>
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          onSelect={() => {
+            navigator.clipboard.writeText(channel.user.id);
+            toast.success('Copied User ID');
+          }}
+        >
+          Copy User ID
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

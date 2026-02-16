@@ -136,7 +136,7 @@ export const ChannelsService = {
     await api.post(`channels/${channelId}/typing`).catch(() => { });
   },
 
-  async sendChannelMessage(channelId: string, content: string, replyTo: string | null = null) {
+  async sendChannelMessage(channelId: string, content: string, replyTo: string | null = null, shouldMention: boolean = true) {
     const { setChannelPendingMessages, channelPendingMessages } = useChannelsStore.getState();
 
     const generatedNonce = Date.now().toString() + Math.floor(Math.random() * 1000).toString();
@@ -177,7 +177,10 @@ export const ChannelsService = {
       await api.post(`/channels/${channelId}/messages`, {
         content: content,
         nonce: generatedNonce,
-        ...(replyTo ? { message_reference: { message_id: replyTo } } : {}),
+        ...(replyTo ? {
+          message_reference: { message_id: replyTo },
+          allowed_mentions: { replied_user: shouldMention }
+        } : {}),
       });
     } catch {
       // Remove from pending messages
