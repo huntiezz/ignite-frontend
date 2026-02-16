@@ -312,7 +312,6 @@ const ChannelInput = ({ channel }) => {
   }, [channel?.channel_id, replyingId]);
 
   const typingText = useMemo(() => {
-    console.log(typingUsers);
     if (typingUsers.length === 0) return null;
     const names = typingUsers.map((t) => t.username);
     if (names.length === 1) return `${names[0]} is typing...`;
