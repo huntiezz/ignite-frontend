@@ -41,6 +41,7 @@ import { emojiMap, registerEmoji, getTwemojiUrl } from '../../utils/emoji.utils'
 import { useEmojisStore } from '../../store/emojis.store';
 import emojisData from '../../assets/emojis/emojis.json';
 import { useTypingStore } from '../../store/typing.store';
+import { useUsersStore } from '@/store/users.store';
 
 const MAX_MESSAGE_LENGTH = 2000;
 const SUGGESTIONS_LIMIT = 10;
@@ -269,7 +270,7 @@ const convertSerializedMentions = (root, members, resolveUser) => {
 
 const ChannelInput = ({ channel }) => {
   const { inputMessage, setInputMessage } = useChannelInputContext();
-  const { replyingId, setReplyingId } = useChannelContext();
+  const { replyingId, setReplyingId, setEditingId } = useChannelContext();
   const editorRef = useRef(null);
   const savedSelectionRef = useRef(null);
 
@@ -277,7 +278,7 @@ const ChannelInput = ({ channel }) => {
   const guildsStore = useGuildsStore();
   const { guildEmojis } = useEmojisStore();
   const customEmojis = guildEmojis[guildId] || [];
-  const currentUser = useStore((s) => s.user);
+  const currentUser = useUsersStore().getCurrentUser();
   const members = useMemo(
     () => guildsStore.guildMembers[guildId] || [],
     [guildsStore.guildMembers, guildId]
@@ -596,6 +597,14 @@ const ChannelInput = ({ channel }) => {
         syncValue();
         return;
       }
+    }
+
+    if (e.key === 'ArrowUp' && editorRef.current?.textContent.trim() === '') {
+      e.preventDefault();
+      const messages = channelMessages[channel?.channel_id] || [];
+      const lastOwnMessage = [...messages].reverse().find((m) => m.author.id == currentUser?.id);
+      if (lastOwnMessage) setEditingId(lastOwnMessage.id);
+      return;
     }
 
     if (e.key === 'Enter' && !e.shiftKey) {
