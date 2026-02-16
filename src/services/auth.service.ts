@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import api from '../api.js';
-import useStore from '../hooks/useStore';
+import { useAuthStore } from '../store/auth.store';
+import { useUsersStore } from '../store/users.store';
 
 export const AuthService = {
   async login(credentials) {
@@ -8,7 +9,12 @@ export const AuthService = {
       const { data } = await api.post('/login', credentials);
 
       if (data.user && data.token) {
-        useStore.getState().login(data.user, data.token);
+        // Store user in users store
+        useUsersStore.getState().setUser(data.user.id, data.user);
+
+        // Store userId and token in auth store
+        useAuthStore.getState().login(data.user.id, data.token);
+
         toast.success('Logged in successfully.');
         return data;
       }
@@ -24,7 +30,12 @@ export const AuthService = {
       const { data } = await api.post('/register', credentials);
 
       if (data.user && data.token) {
-        useStore.getState().login(data.user, data.token);
+        // Store user in users store
+        useUsersStore.getState().setUser(data.user.id, data.user);
+
+        // Store userId and token in auth store
+        useAuthStore.getState().login(data.user.id, data.token);
+
         toast.success('Registered successfully.');
         return data;
       }

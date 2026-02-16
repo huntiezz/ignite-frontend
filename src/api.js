@@ -1,6 +1,5 @@
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import useStore from './hooks/useStore';
+import { useAuthStore } from './store/auth.store';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL + '/' + import.meta.env.VITE_API_VERSION + '/',
@@ -8,9 +7,9 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const store = useStore.getState();
-    if (store.token) {
-      config.headers.Authorization = `Bearer ${store.token}`;
+    const token = useAuthStore.getState().token;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -26,11 +25,9 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const store = useStore.getState();
-      store.logout();
+      useAuthStore.getState().logout();
 
-      // const navigate = useNavigate();
-      // navigate('/login');
+      // Redirect to login handled by React Router
     }
 
     return Promise.reject(error);

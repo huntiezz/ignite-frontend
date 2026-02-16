@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useAuthStore } from './auth.store';
 
 type User = {
   id: string;
@@ -14,6 +15,7 @@ type UsersStore = {
   setUser: (userId: string, user: User) => void;
   setUsers: (users: User[]) => void;
   getUser: (userId: string) => User | undefined;
+  getCurrentUser: () => User | undefined;
 };
 
 export const useUsersStore = create<UsersStore>((set, get) => ({
@@ -46,4 +48,9 @@ export const useUsersStore = create<UsersStore>((set, get) => ({
     }),
 
   getUser: (userId) => get().users[userId],
+
+  getCurrentUser: () => {
+    const userId = useAuthStore.getState().userId;
+    return userId ? get().users[userId] : undefined;
+  },
 }));
