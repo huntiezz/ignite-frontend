@@ -32,16 +32,6 @@ export const GuildsService = {
     }
   },
 
-  async loadGuildChannels(guildId) {
-    const { editGuild } = useGuildsStore.getState();
-    try {
-      const { data } = await api.get(`/guilds/${guildId}/channels`);
-      editGuild(guildId, { channels: data });
-    } catch {
-      toast.error('Unable to load guild channels.');
-    }
-  },
-
   async createGuild(guildData) {
     const { addGuild } = useGuildsStore.getState();
     try {
@@ -49,19 +39,6 @@ export const GuildsService = {
       addGuild(data);
       ChannelsService.initializeGuildChannels(data.id);
       toast.success('Server created successfully.');
-    } catch (error) {
-      console.error(error);
-      toast.error(error.response?.data?.message || 'An error occurred.');
-    }
-  },
-
-  async createGuildChannel(guildId, channelData) {
-    const { editGuild, guilds } = useGuildsStore.getState();
-    try {
-      const response = await api.post(`/guilds/${guildId}/channels`, channelData);
-      const guild = guilds.find((g) => g.id === guildId);
-      editGuild(guildId, { channels: [...guild.channels, response.data] });
-      toast.success('Channel created successfully.');
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || 'An error occurred.');

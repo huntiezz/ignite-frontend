@@ -6,6 +6,7 @@ import { FriendsService } from './friends.service';
 import { UnreadsService } from './unreads.service';
 import { ChannelsService } from './channels.service';
 import { RolesService } from './roles.service';
+import { StickersService } from './stickers.service';
 
 export const InitializationService = {
   async initialize() {
@@ -39,6 +40,7 @@ export const InitializationService = {
 
       await ChannelsService.loadChannels();
       await RolesService.initializeGuildRoles();
+      await StickersService.loadAllGuildStickers();
 
       console.log('Initialization complete.');
       return { success: true, authenticated: true };

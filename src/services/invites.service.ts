@@ -8,6 +8,7 @@ import { UnreadsService } from './unreads.service';
 import { useAuthStore } from '@/store/auth.store.js';
 import { useUsersStore } from '@/store/users.store.js';
 import { EmojisService } from './emojis.service';
+import { StickersService } from './stickers.service';
 
 export const InvitesService = {
   async getInvitePreview(code) {
@@ -25,6 +26,7 @@ export const InvitesService = {
       await GuildsService.loadGuilds();
       await ChannelsService.loadChannels();
       await EmojisService.loadAllGuildEmojis();
+      await StickersService.loadAllGuildStickers();
       toast.success('Joined server successfully.');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to join server.');

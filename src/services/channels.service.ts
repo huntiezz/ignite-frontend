@@ -136,7 +136,7 @@ export const ChannelsService = {
     await api.post(`channels/${channelId}/typing`).catch(() => { });
   },
 
-  async sendChannelMessage(channelId: string, content: string, replyTo: string | null = null, shouldMention: boolean = true) {
+  async sendChannelMessage(channelId: string, content: string, replyTo: string | null = null, shouldMention: boolean = true, stickerIds: string[] = []) {
     const { setChannelPendingMessages, channelPendingMessages } = useChannelsStore.getState();
 
     const generatedNonce = Date.now().toString() + Math.floor(Math.random() * 1000).toString();
@@ -181,6 +181,7 @@ export const ChannelsService = {
           message_reference: { message_id: replyTo },
           allowed_mentions: { replied_user: shouldMention }
         } : {}),
+        ...(stickerIds.length > 0 ? { sticker_ids: stickerIds } : {}),
       });
     } catch {
       // Remove from pending messages
@@ -452,12 +453,49 @@ export const ChannelsService = {
     setMessageReactions(channel_id, message_id, reactions);
   },
 
-  /**
-   * Callback for the .channel.deleted event from the WebSocket to update the local store by removing the deleted channel.
-   *
-   * @param event The channel deleted event data
-   * @return void
-   */
-  // handleChannelDeleted(event: any) {
-  //     const { channels, setChannels } = useChannelsStore.getState();
+  handleChannelUpdated(event: any) {
+    const { channels, setChannels } = useChannelsStore.getState();
+    setChannels(
+      channels.map((c) =>
+        c.channel_id === event.channel.channel_id ? { ...c, ...event.channel } : c
+      )
+    );
+  },
+
+  handleChannelDeleted(event: any) {
+    const { channels, setChannels } = useChannelsStore.getState();
+    setChannels(channels.filter((c) => c.channel_id !== event.channel.channel_id));
+  },
+
+  handleChannelPermissionUpdated(event: any) {
+    const { channels, setChannels } = useChannelsStore.getState();
+    setChannels(
+      channels.map((c) => {
+        if (c.channel_id !== event.channel_id) return c;
+        const rolePermissions = c.role_permissions || [];
+        const idx = rolePermissions.findIndex((rp: any) => rp.role_id === event.permission.role_id);
+        if (idx === -1) {
+          return { ...c, role_permissions: [...rolePermissions, event.permission] };
+        }
+        const updated = [...rolePermissions];
+        updated[idx] = event.permission;
+        return { ...c, role_permissions: updated };
+      })
+    );
+  },
+
+  handleChannelPermissionDeleted(event: any) {
+    const { channels, setChannels } = useChannelsStore.getState();
+    setChannels(
+      channels.map((c) => {
+        if (c.channel_id !== event.channel_id) return c;
+        return {
+          ...c,
+          role_permissions: (c.role_permissions || []).filter(
+            (rp: any) => rp.role_id !== event.permission.role_id
+          ),
+        };
+      })
+    );
+  },
 };

@@ -200,7 +200,9 @@ const ChannelMention = ({ channelId, isReply = false }) => {
   );
 };
 
-const MessageContent = ({ content, isReply = false }) => {
+const STICKER_CDN_PREFIX = `${import.meta.env.VITE_CDN_BASE_URL}/stickers/`;
+
+const MessageContent = ({ content, isReply = false, stickers = [] }) => {
   const { guildId } = useGuildContext();
   const { guildEmojis } = useEmojisStore();
 
@@ -275,6 +277,21 @@ const MessageContent = ({ content, isReply = false }) => {
     {inviteCodes.map((code) => (
       <InviteEmbed key={code} code={code} />
     ))}
+    {stickers.length > 0 && !isReply && (
+      <div className="mt-1 flex gap-2 select-none">
+        {stickers.map((sticker) => (
+          <img
+            key={sticker.id}
+            src={`${STICKER_CDN_PREFIX}${sticker.id}`}
+            alt={sticker.name}
+            title={sticker.name}
+            className="size-40 object-contain"
+            loading="lazy"
+            decoding="async"
+          />
+        ))}
+      </div>
+    )}
     </>
   );
 };

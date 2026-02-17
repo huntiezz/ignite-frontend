@@ -2,11 +2,34 @@ import { useAuthStore } from '../store/auth.store';
 import { FriendsService } from './friends.service';
 import { UnreadsService } from './unreads.service';
 import { ChannelsService } from './channels.service';
-import { GuildsService } from './guilds.service';
-import { RolesService } from './roles.service';
-import { EmojisService } from './emojis.service';
 import { useUsersStore } from '../store/users.store';
-import { useChannelsStore } from '../store/channels.store';
+import {
+  handleChannelCreated,
+  handleChannelDeleted,
+  handleChannelPermissionDeleted,
+  handleChannelPermissionUpdated,
+  handleChannelUpdated,
+  handleEmojiCreated,
+  handleEmojiDeleted,
+  handleGuildDeleted,
+  handleGuildUpdated,
+  handleMemberJoined,
+  handleMemberLeft,
+  handleMemberTyping,
+  handleMemberUpdated,
+  handleMessageCreated,
+  handleMessageDeleted,
+  handleMessageUpdated,
+  handleRoleCreated,
+  handleRoleDeleted,
+  handleRoleUpdated,
+  handleStickerCreated,
+  handleStickerDeleted,
+  handleUserUpdated,
+  handleVoiceStateJoined,
+  handleVoiceStateLeft,
+  handleVoiceStateUpdate,
+} from '../handlers/guild';
 
 export const EchoService = {
   activeGuildSubscriptions: new Set<string>(),
@@ -61,44 +84,36 @@ export const EchoService = {
     }
 
     const currentUserId = useAuthStore.getState().userId;
+    const context = { guildId, currentUserId };
+
     console.log(`Subscribing to guild: ${guildId}`);
 
     window.Echo.private(`guild.${guildId}`)
-      .listen('.guild.updated', GuildsService.handleGuildUpdated)
-      .listen('.guild.deleted', GuildsService.handleGuildDeleted)
-      .listen('.member.joined', (event: any) => {
-        GuildsService.addGuildMemberToStore(guildId, event.member);
-      })
-      .listen('.member.updated', (event: any) => {
-        GuildsService.updateGuildMemberInStore(guildId, event.member.user_id, event.member);
-      })
-      .listen('.member.left', (event: any) => {
-        GuildsService.deleteGuildMemberFromStore(guildId, event.member.user_id);
-      })
-      .listen('.message.created', ChannelsService.handleMessageCreated)
-      .listen('.message.updated', ChannelsService.handleMessageUpdated)
-      .listen('.message.deleted', ChannelsService.handleMessageDeleted)
-      .listen('.role.created', RolesService.handleRoleCreated)
-      .listen('.role.updated', RolesService.handleRoleUpdated)
-      .listen('.role.deleted', RolesService.handleRoleDeleted)
-      .listen('.emoji.created', EmojisService.handleEmojiCreated)
-      .listen('.emoji.deleted', EmojisService.handleEmojiDeleted)
-      .listen('.member.typing', ChannelsService.handleMemberTyping)
-      .listen('.user.updated', (event: any) => {
-        useUsersStore.getState().setUser(event.user.id, event.user);
-      })
-      .listen('.voice_state.joined', (event: any) => {
-        if (event.voice_state.user_id === currentUserId) return;
-        useChannelsStore.getState().updateChannelVoiceState(event.channel_id, event);
-      })
-      .listen('.voice_state.update', (event: any) => {
-        if (event.voice_state.user_id === currentUserId) return;
-        useChannelsStore.getState().updateChannelVoiceState(event.channel_id, event, false);
-      })
-      .listen('.voice_state.left', (event: any) => {
-        if (event.voice_state.user_id === currentUserId) return;
-        useChannelsStore.getState().removeUserVoiceState(event.user_id);
-      });
+      .listen('.channel.created', (data: any) => handleChannelCreated(data, context))
+      .listen('.channel.deleted', (data: any) => handleChannelDeleted(data, context))
+      .listen('.channel.updated', (data: any) => handleChannelUpdated(data, context))
+      .listen('.channel_permission.deleted', (data: any) => handleChannelPermissionDeleted(data, context))
+      .listen('.channel_permission.updated', (data: any) => handleChannelPermissionUpdated(data, context))
+      .listen('.emoji.created', (data: any) => handleEmojiCreated(data, context))
+      .listen('.emoji.deleted', (data: any) => handleEmojiDeleted(data, context))
+      .listen('.guild.deleted', (data: any) => handleGuildDeleted(data, context))
+      .listen('.guild.updated', (data: any) => handleGuildUpdated(data, context))
+      .listen('.member.joined', (data: any) => handleMemberJoined(data, context))
+      .listen('.member.left', (data: any) => handleMemberLeft(data, context))
+      .listen('.member.typing', (data: any) => handleMemberTyping(data, context))
+      .listen('.member.updated', (data: any) => handleMemberUpdated(data, context))
+      .listen('.message.created', (data: any) => handleMessageCreated(data, context))
+      .listen('.message.deleted', (data: any) => handleMessageDeleted(data, context))
+      .listen('.message.updated', (data: any) => handleMessageUpdated(data, context))
+      .listen('.role.created', (data: any) => handleRoleCreated(data, context))
+      .listen('.role.deleted', (data: any) => handleRoleDeleted(data, context))
+      .listen('.role.updated', (data: any) => handleRoleUpdated(data, context))
+      .listen('.sticker.created', (data: any) => handleStickerCreated(data, context))
+      .listen('.sticker.deleted', (data: any) => handleStickerDeleted(data, context))
+      .listen('.user.updated', (data: any) => handleUserUpdated(data, context))
+      .listen('.voice_state.joined', (data: any) => handleVoiceStateJoined(data, context))
+      .listen('.voice_state.left', (data: any) => handleVoiceStateLeft(data, context))
+      .listen('.voice_state.update', (data: any) => handleVoiceStateUpdate(data, context));
 
     this.activeGuildSubscriptions.add(guildId);
   },

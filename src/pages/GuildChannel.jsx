@@ -8,6 +8,7 @@ import GuildLayout from '../layouts/GuildLayout';
 import Channel from '../components/Channel/Channel';
 import { ChannelContextProvider } from '../contexts/ChannelContext';
 import ChannelDialog from '../components/Channel/ChannelDialog';
+import { StickersService } from '@/services/stickers.service';
 
 const GuildChannelPage = () => {
   const navigate = useNavigate();
@@ -26,18 +27,6 @@ const GuildChannelPage = () => {
       navigate('/channels/@me', { replace: true });
     }
   }, [guild, navigate]);
-
-  useEffect(() => {
-    if (guild && !guild.channels) {
-      GuildsService.loadGuildChannels(guild.id);
-    }
-  }, [guild]);
-
-  useEffect(() => {
-    if (guild) {
-      EmojisService.loadGuildEmojis(guild.id);
-    }
-  }, [guild?.id]);
 
   // Track active channel for notification suppression
   useEffect(() => {
