@@ -3,13 +3,14 @@ import { useUsersStore } from '../../store/users.store';
 import { useGuildsStore } from '../../store/guilds.store';
 import { useGuildContext } from '../../contexts/GuildContext';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { cn } from '@/lib/utils';
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '../ui/context-menu';
 import GuildMemberPopoverContent from '../GuildMember/GuildMemberPopoverContent';
 import GuildMemberContextMenu from '../GuildMember/GuildMemberContextMenu';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ExternalLink from './ExternalLink.jsx';
+import Emoji from './Emoji.jsx';
+import InviteEmbed from './InviteEmbed.jsx';
 import { convertEmojiShortcodes, convertUnicodeEmojis } from '../../utils/emoji.utils';
 import { useEmojisStore } from '../../store/emojis.store';
 import { useChannelsStore } from '../../store/channels.store';
@@ -19,6 +20,7 @@ import { Hash, Megaphone, SpeakerHigh } from '@phosphor-icons/react';
 import { visit } from 'unist-util-visit';
 
 const EMOJI_CDN_PREFIX = `${import.meta.env.VITE_CDN_BASE_URL}/emojis/`;
+const INVITE_URL_REGEX = /https?:\/\/app\.ignite-chat\.com\/invite\/([a-zA-Z0-9]+)/g;
 
 const convertCustomEmojis = (text, allGuildEmojis, currentGuildId) => {
   // Handle global emoji format <id:name>
@@ -32,17 +34,9 @@ const convertCustomEmojis = (text, allGuildEmojis, currentGuildId) => {
   return text.replace(/:[\w_+-]+:/g, (match) => {
     const name = match.slice(1, -1);
     
-    // Try current guild first
     const currentEmojis = allGuildEmojis[currentGuildId] || [];
     const localEmoji = currentEmojis.find((e) => e.name === name);
     if (localEmoji) return `![${name}](${EMOJI_CDN_PREFIX}${localEmoji.id})`;
-
-    // Try other guilds
-    for (const gid in allGuildEmojis) {
-      if (gid === currentGuildId) continue;
-      const emoji = allGuildEmojis[gid].find((e) => e.name === name);
-      if (emoji) return `![${name}](${EMOJI_CDN_PREFIX}${emoji.id})`;
-    }
 
     return match;
   });
@@ -315,11 +309,20 @@ const isInternalMessageLink = (url) => {
   return null;
 };
 
-const MessageContent = ({ content, isReply = false }) => {
+const STICKER_CDN_PREFIX = `${import.meta.env.VITE_CDN_BASE_URL}/stickers/`;
+
+const MessageContent = ({ content, isReply = false, stickers = [] }) => {
   const { guildId } = useGuildContext();
   const { guildEmojis } = useEmojisStore();
 
+  const inviteCodes = useMemo(() => {
+    if (isReply) return [];
+    const matches = [...content.matchAll(INVITE_URL_REGEX)];
+    return [...new Set(matches.map((m) => m[1]))];
+  }, [content, isReply]);
+
   return (
+    <>
     <Markdown
       remarkPlugins={[[remarkGfm, { singleTilde: false }], remarkMentions]}
       urlTransform={(url) => {
@@ -345,14 +348,11 @@ const MessageContent = ({ content, isReply = false }) => {
           const isTwemoji = src?.startsWith('https://cdn.jsdelivr.net/gh/twitter/twemoji');
           if (src?.startsWith(EMOJI_CDN_PREFIX) || isTwemoji) {
             return (
-              <img
+              <Emoji
                 src={src}
                 alt={alt}
-                className={cn(
-                  'inline object-contain align-text-bottom',
-                  isReply ? 'h-4 w-4' : isTwemoji ? 'h-6 w-6' : 'h-8 w-8'
-                )}
-                loading="lazy"
+                isReply={isReply}
+                isTwemoji={isTwemoji}
               />
             );
           }
@@ -395,6 +395,25 @@ const MessageContent = ({ content, isReply = false }) => {
         convertEmojiShortcodes(convertCustomEmojis(content, guildEmojis, guildId))
       )}
     </Markdown>
+    {inviteCodes.map((code) => (
+      <InviteEmbed key={code} code={code} />
+    ))}
+    {stickers.length > 0 && !isReply && (
+      <div className="mt-1 flex gap-2 select-none">
+        {stickers.map((sticker) => (
+          <img
+            key={sticker.id}
+            src={`${STICKER_CDN_PREFIX}${sticker.id}`}
+            alt={sticker.name}
+            title={sticker.name}
+            className="size-40 object-contain"
+            loading="lazy"
+            decoding="async"
+          />
+        ))}
+      </div>
+    )}
+    </>
   );
 };
 

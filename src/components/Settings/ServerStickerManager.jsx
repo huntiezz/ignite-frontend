@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { EmojisService } from '../../services/emojis.service';
-import { useEmojisStore } from '../../store/emojis.store';
+import { StickersService } from '../../services/stickers.service';
+import { useStickersStore } from '../../store/stickers.store';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -10,7 +10,7 @@ import { Upload, Trash2 } from 'lucide-react';
 import ImageCropperDialog from './ImageCropperDialog';
 import api from '../../api';
 
-const EMOJI_SIZE = 128;
+const STICKER_SIZE = 320;
 
 const fileToDataUrl = (file) =>
   new Promise((resolve, reject) => {
@@ -20,20 +20,20 @@ const fileToDataUrl = (file) =>
     reader.readAsDataURL(file);
   });
 
-const ServerEmojiManager = ({ guild }) => {
+const ServerStickerManager = ({ guild }) => {
   const [uploading, setUploading] = useState(false);
-  const [emojiName, setEmojiName] = useState('');
-  const [croppedImage, setCroppedImage] = useState(null); // base64 data URL
+  const [stickerName, setStickerName] = useState('');
+  const [croppedImage, setCroppedImage] = useState(null);
   const [cropperOpen, setCropperOpen] = useState(false);
   const [cropperSrc, setCropperSrc] = useState(null);
 
   const fileInputRef = useRef(null);
 
-  const guildEmojis = useEmojisStore((state) => state.guildEmojis[guild.id] || []);
+  const guildStickers = useStickersStore((state) => state.guildStickers[guild.id] || []);
 
   useEffect(() => {
     if (guild?.id) {
-      EmojisService.loadGuildEmojis(guild.id);
+      StickersService.loadGuildStickers(guild.id);
     }
   }, [guild?.id]);
 
@@ -42,10 +42,9 @@ const ServerEmojiManager = ({ guild }) => {
     e.target.value = '';
     if (!file) return;
 
-    // Auto-fill name from filename if empty
-    if (!emojiName) {
+    if (!stickerName) {
       const name = file.name.split('.')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
-      setEmojiName(name);
+      setStickerName(name);
     }
 
     const dataUrl = await fileToDataUrl(file);
@@ -65,49 +64,49 @@ const ServerEmojiManager = ({ guild }) => {
   };
 
   const handleUpload = async () => {
-    if (!croppedImage || !emojiName) {
-      toast.error('Please select an image and enter a shortcode.');
+    if (!croppedImage || !stickerName) {
+      toast.error('Please select an image and enter a name.');
       return;
     }
 
     setUploading(true);
     try {
-      const { addGuildEmoji } = useEmojisStore.getState();
-      const res = await api.post(`guilds/${guild.id}/emojis`, {
-        name: emojiName,
+      const { addGuildSticker } = useStickersStore.getState();
+      const res = await api.post(`guilds/${guild.id}/stickers`, {
+        name: stickerName,
         image: croppedImage,
       });
-      addGuildEmoji(guild.id, res.data);
-      toast.success('Emoji uploaded successfully!');
-      setEmojiName('');
+      addGuildSticker(guild.id, res.data);
+      toast.success('Sticker uploaded successfully!');
+      setStickerName('');
       setCroppedImage(null);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to upload emoji.');
+      toast.error(error.response?.data?.message || 'Failed to upload sticker.');
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDelete = async (emojiId) => {
+  const handleDelete = async (stickerId) => {
     try {
-      await EmojisService.deleteEmoji(guild.id, emojiId);
-      toast.success('Emoji deleted.');
+      await StickersService.deleteSticker(guild.id, stickerId);
+      toast.success('Sticker deleted.');
     } catch (error) {
-      toast.error('Failed to delete emoji.');
+      toast.error('Failed to delete sticker.');
     }
   };
 
   return (
     <div className="max-w-[740px] space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-foreground">Emoji</h2>
+        <h2 className="text-xl font-bold text-foreground">Stickers</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Upload custom emojis and use them in your server. You can upload up to 50 custom emojis.
+          Upload custom stickers and use them in your server. You can upload up to 30 custom stickers.
         </p>
       </div>
 
       <div className="rounded-lg border border-border bg-muted/30 p-4">
-        <h3 className="mb-4 text-xs font-bold uppercase text-muted-foreground">Upload Emoji</h3>
+        <h3 className="mb-4 text-xs font-bold uppercase text-muted-foreground">Upload Sticker</h3>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
           {/* Image picker */}
           <div className="flex-1 space-y-2">
@@ -116,7 +115,7 @@ const ServerEmojiManager = ({ guild }) => {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border-2 border-dashed border-border bg-background transition-colors hover:border-primary/50"
+                className="relative flex h-24 w-24 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border-2 border-dashed border-border bg-background transition-colors hover:border-primary/50"
               >
                 {croppedImage ? (
                   <img
@@ -130,7 +129,7 @@ const ServerEmojiManager = ({ guild }) => {
               </button>
 
               <div className="flex-1 text-xs text-muted-foreground">
-                <p>Recommended: 128×128</p>
+                <p>Recommended: 320×320</p>
                 <p>Allowed: PNG, JPEG, GIF</p>
                 {croppedImage && (
                   <button
@@ -156,13 +155,13 @@ const ServerEmojiManager = ({ guild }) => {
           {/* Name */}
           <div className="flex-1 space-y-2">
             <Label className="text-xs font-bold uppercase text-muted-foreground">
-              Emoji Name
+              Sticker Name
             </Label>
             <Input
-              placeholder="emoji_name"
-              value={emojiName}
+              placeholder="sticker_name"
+              value={stickerName}
               onChange={(e) =>
-                setEmojiName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
+                setStickerName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
               }
               className="h-10 bg-background"
             />
@@ -170,7 +169,7 @@ const ServerEmojiManager = ({ guild }) => {
 
           <Button
             onClick={handleUpload}
-            disabled={uploading || !croppedImage || !emojiName}
+            disabled={uploading || !croppedImage || !stickerName}
             className="shrink-0"
           >
             {uploading ? 'Uploading...' : 'Upload'}
@@ -183,29 +182,29 @@ const ServerEmojiManager = ({ guild }) => {
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-xs font-bold uppercase text-muted-foreground">
-            {guildEmojis.length} Emojis
+            {guildStickers.length} Stickers
           </h3>
-          <p className="text-xs text-muted-foreground">Slots remaining: {50 - guildEmojis.length}</p>
+          <p className="text-xs text-muted-foreground">Slots remaining: {30 - guildStickers.length}</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-5">
-          {guildEmojis.map((emoji) => (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {guildStickers.map((sticker) => (
             <div
-              key={emoji.id}
-              className="group relative flex flex-col items-center gap-2 rounded-md border border-border bg-muted/30 p-3 transition-colors hover:bg-muted/50"
+              key={sticker.id}
+              className="group relative flex flex-col items-center gap-2 rounded-md border border-border bg-muted/30 p-4 transition-colors hover:bg-muted/50"
             >
-              <div className="h-8 w-8">
+              <div className="h-24 w-24">
                 <img
-                  src={`${import.meta.env.VITE_CDN_BASE_URL}/emojis/${emoji.id}`}
-                  alt={emoji.name}
+                  src={`${import.meta.env.VITE_CDN_BASE_URL}/stickers/${sticker.id}`}
+                  alt={sticker.name}
                   className="h-full w-full object-contain"
                 />
               </div>
               <span className="w-full truncate text-center text-xs font-medium text-foreground">
-                :{emoji.name}:
+                {sticker.name}
               </span>
               <button
-                onClick={() => handleDelete(emoji.id)}
+                onClick={() => handleDelete(sticker.id)}
                 className="absolute right-1 top-1 p-1 text-muted-foreground opacity-0 transition-all hover:text-destructive group-hover:opacity-100"
               >
                 <Trash2 className="h-3 w-3" />
@@ -213,10 +212,10 @@ const ServerEmojiManager = ({ guild }) => {
             </div>
           ))}
 
-          {guildEmojis.length === 0 && (
+          {guildStickers.length === 0 && (
             <div className="col-span-full py-10 text-center">
               <p className="text-sm italic text-muted-foreground">
-                No custom emojis yet. Upload one above!
+                No custom stickers yet. Upload one above!
               </p>
             </div>
           )}
@@ -227,15 +226,15 @@ const ServerEmojiManager = ({ guild }) => {
         open={cropperOpen}
         onClose={handleCropClose}
         imageSrc={cropperSrc}
-        title="Crop Emoji"
+        title="Crop Sticker"
         aspect={1}
         cropShape="rect"
-        outputWidth={EMOJI_SIZE}
-        outputHeight={EMOJI_SIZE}
+        outputWidth={STICKER_SIZE}
+        outputHeight={STICKER_SIZE}
         onConfirm={handleCropConfirm}
       />
     </div>
   );
 };
 
-export default ServerEmojiManager;
+export default ServerStickerManager;

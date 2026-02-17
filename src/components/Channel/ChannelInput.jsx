@@ -17,7 +17,7 @@ import { useChannelInputContext, useChannelContext } from '../../contexts/Channe
 import Avatar from '../Avatar.jsx';
 import { cn } from '@/lib/utils';
 import { useChannelsStore } from '../../store/channels.store';
-import { X, Hash, Megaphone, SpeakerHigh } from '@phosphor-icons/react';
+import { X, Hash, Megaphone, SpeakerHigh, Keyboard } from '@phosphor-icons/react';
 import { useGuildsStore } from '../../store/guilds.store';
 import { useGuildContext } from '../../contexts/GuildContext';
 import { ChannelType } from '../../enums/ChannelType';
@@ -35,12 +35,16 @@ import {
   Shapes,
   Flag as FlagIcon,
 } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import { ChannelsService } from '../../services/channels.service';
 import { toast } from 'sonner';
 import { emojiMap, registerEmoji, getTwemojiUrl } from '../../utils/emoji.utils';
 import { useEmojisStore } from '../../store/emojis.store';
 import emojisData from '../../assets/emojis/emojis.json';
 import { useTypingStore } from '../../store/typing.store';
+import { useUsersStore } from '@/store/users.store';
+import StickerPicker from './StickerPicker';
+import { Sticker } from 'lucide-react';
 
 const MAX_MESSAGE_LENGTH = 2000;
 const SUGGESTIONS_LIMIT = 10;
@@ -269,7 +273,7 @@ const convertSerializedMentions = (root, members, resolveUser) => {
 
 const ChannelInput = ({ channel }) => {
   const { inputMessage, setInputMessage } = useChannelInputContext();
-  const { replyingId, setReplyingId } = useChannelContext();
+  const { replyingId, setReplyingId, setEditingId } = useChannelContext();
   const editorRef = useRef(null);
   const savedSelectionRef = useRef(null);
 
@@ -277,7 +281,22 @@ const ChannelInput = ({ channel }) => {
   const guildsStore = useGuildsStore();
   const { guildEmojis } = useEmojisStore();
   const customEmojis = guildEmojis[guildId] || [];
-  const currentUser = useStore((s) => s.user);
+
+  const guildEmojiGroups = useMemo(() => {
+    return guildsStore.guilds
+      .filter((g) => (guildEmojis[g.id] || []).length > 0)
+      .map((g) => ({
+        id: g.id,
+        name: g.name,
+        icon: g.icon_file_id ? `${import.meta.env.VITE_CDN_BASE_URL}/icons/${g.icon_file_id}` : undefined,
+        emojis: (guildEmojis[g.id] || []).map((e) => ({
+          id: e.id,
+          name: e.name,
+          url: `${import.meta.env.VITE_CDN_BASE_URL}/emojis/${e.id}`,
+        })),
+      }));
+  }, [guildsStore.guilds, guildEmojis]);
+  const currentUser = useUsersStore().getCurrentUser();
   const members = useMemo(
     () => guildsStore.guildMembers[guildId] || [],
     [guildsStore.guildMembers, guildId]
@@ -405,8 +424,9 @@ const ChannelInput = ({ channel }) => {
   /* ---------------- emojis ---------------- */
   const { recentEmojis, addRecentEmoji } = useEmojisStore();
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [isStickerPickerOpen, setIsStickerPickerOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState(
-    recentEmojis.length > 0 ? 'recent' : 'custom'
+    recentEmojis.length > 0 ? 'recent' : `guild-${guildId}`
   );
 
   const [hoveredEmoji, setHoveredEmoji] = useState(null);
@@ -414,6 +434,7 @@ const ChannelInput = ({ channel }) => {
   const [emojiSearch, setEmojiSearch] = useState('');
   const [emojiIndex, setEmojiIndex] = useState(0);
   const [shouldMention] = useState(true);
+  const [silentTyping, setSilentTyping] = useState(() => localStorage.getItem('silentTyping') === 'true');
 
   const filteredEmojis = useMemo(() => {
     if (emojiQuery === null) return [];
@@ -525,7 +546,7 @@ const ChannelInput = ({ channel }) => {
       editorRef.current.innerHTML = '';
     }
 
-    if (channel?.channel_id && editorRef.current.textContent.trim() !== '') {
+    if (channel?.channel_id && editorRef.current.textContent.trim() !== '' && !silentTyping) {
       ChannelsService.sendTypingIndicator(channel.channel_id);
     }
   };
@@ -598,6 +619,14 @@ const ChannelInput = ({ channel }) => {
       }
     }
 
+    if (e.key === 'ArrowUp' && editorRef.current?.textContent.trim() === '') {
+      e.preventDefault();
+      const messages = channelMessages[channel?.channel_id] || [];
+      const lastOwnMessage = [...messages].reverse().find((m) => m.author.id == currentUser?.id);
+      if (lastOwnMessage) setEditingId(lastOwnMessage.id);
+      return;
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -628,6 +657,24 @@ const ChannelInput = ({ channel }) => {
     setInputMessage('');
     setReplyingId(null);
     editorRef.current.innerHTML = '';
+  };
+
+  const sendSticker = (sticker) => {
+    if (!canSendMessages) {
+      toast.error('You do not have permission to send messages in this channel.');
+      return;
+    }
+    if (!channel?.channel_id) return;
+
+    ChannelsService.sendChannelMessage(
+      channel.channel_id,
+      '',
+      replyingId || null,
+      shouldMention,
+      [sticker.id]
+    );
+    setReplyingId(null);
+    setIsStickerPickerOpen(false);
   };
 
   const otherRecipient =
@@ -858,11 +905,63 @@ const ChannelInput = ({ channel }) => {
           </div>
         )}
 
+        <div className="mr-2 mt-2 flex items-center gap-0.5 self-start">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setSilentTyping((prev) => {
+                    const next = !prev;
+                    localStorage.setItem('silentTyping', String(next));
+                    return next;
+                  });
+                }}
+                className={cn(
+                  'size-8',
+                  silentTyping
+                    ? 'text-[#dbdee1]'
+                    : 'text-[#b5bac1] hover:text-[#dbdee1]'
+                )}
+              >
+                <div className="relative">
+                  <Keyboard className="size-5" />
+                  {silentTyping && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="h-[22px] w-[2px] rotate-45 rounded-full bg-red-500" />
+                    </div>
+                  )}
+                </div>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              {silentTyping ? 'Silent typing enabled' : 'Silent typing disabled'}
+            </TooltipContent>
+          </Tooltip>
+        <Popover.Root open={isStickerPickerOpen} onOpenChange={setIsStickerPickerOpen} modal={false}>
+          <Popover.Trigger asChild>
+            <Button
+              variant="ghost"
+              className="size-8 text-[#b5bac1] hover:text-[#dbdee1]"
+            >
+              <Sticker className="size-5" />
+            </Button>
+          </Popover.Trigger>
+          <Popover.Content
+            side="top"
+            align="end"
+            sideOffset={8}
+            collisionPadding={16}
+            className="z-[1000] border-none bg-transparent p-0 shadow-none"
+          >
+            <StickerPicker onStickerSelect={sendSticker} />
+          </Popover.Content>
+        </Popover.Root>
         <Popover.Root open={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen} modal={false}>
           <Popover.Trigger asChild>
             <Button
               variant="ghost"
-              className="mr-2 mt-2 size-8 self-start text-[#b5bac1] hover:text-[#dbdee1]"
+              className="size-8 text-[#b5bac1] hover:text-[#dbdee1]"
             >
               <Smile className="size-5" />
             </Button>
@@ -894,18 +993,15 @@ const ChannelInput = ({ channel }) => {
                 }}
                 categories={[
                   { id: 'recent', label: 'Recent', icon: <Clock className="size-[20px]" /> },
-                  {
-                    id: 'custom',
-                    label: guild?.name || 'Server',
-                    icon: guild?.icon ? (
-                      <img
-                        src={`${import.meta.env.VITE_CDN_BASE_URL}/icons/${guild.id}`}
-                        className="size-5 rounded-full"
-                      />
+                  ...guildEmojiGroups.map((g) => ({
+                    id: `guild-${g.id}`,
+                    label: g.name,
+                    icon: g.icon ? (
+                      <img src={g.icon} className="size-5 rounded-full" />
                     ) : (
                       <Hash className="size-[20px]" />
                     ),
-                  },
+                  })),
                   { id: 'people', label: 'People', icon: <Smile className="size-[20px]" /> },
                   { id: 'nature', label: 'Nature', icon: <PawPrint className="size-[20px]" /> },
                   { id: 'food', label: 'Food', icon: <Pizza className="size-[20px]" /> },
@@ -926,16 +1022,8 @@ const ChannelInput = ({ channel }) => {
                   standardEmojis={emojisData}
                   recentEmojis={recentEmojis}
                   onCategoryVisible={setActiveCategory}
-                  customEmojis={customEmojis.map((e) => ({
-                    id: e.id,
-                    name: e.name,
-                    url: `${import.meta.env.VITE_CDN_BASE_URL}/emojis/${e.id}`,
-                  }))}
-                  serverName={guild?.name}
+                  guildEmojis={guildEmojiGroups}
                   onHoverEmojiChange={setHoveredEmoji}
-                  serverIcon={
-                    guild?.icon ? `${import.meta.env.VITE_CDN_BASE_URL}/icons/${guild.id}` : null
-                  }
                   onEmojiSelect={({ id, label, emoji, url }) => {
                     // Record in recent emojis
                     addRecentEmoji({
@@ -952,8 +1040,11 @@ const ChannelInput = ({ channel }) => {
                     // Restore focus and selection to the editor
                     restoreSelection();
 
-                    // Convert to shortcode or global ID format
-                    const shortcode = id ? `<${id}:${label}>` : `:${label}:`;
+                    console.log(id, customEmojis);
+
+                    // Use local shortcode if from current guild, global ID format otherwise
+                    const isCurrentGuildEmoji = !!id && customEmojis.some((e) => e.id === id);
+                    const shortcode = id && !isCurrentGuildEmoji ? `<${id}:${label}>` : `:${label}:`;
                     insertTextAtCaret(shortcode);
                     syncValue();
                   }}
@@ -963,6 +1054,7 @@ const ChannelInput = ({ channel }) => {
             </EmojiPicker>
           </Popover.Content>
         </Popover.Root>
+        </div>
       </InputGroup>
       {typingText && (
         <div className="flex items-center gap-1 px-3 pt-1 text-xs text-gray-400">

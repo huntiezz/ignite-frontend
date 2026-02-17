@@ -4,10 +4,11 @@ import ServerRoleManager from './ServerRoleManager';
 import ServerMemberManager from './ServerMemberManager';
 import ServerInviteManager from './ServerInviteManager';
 import ServerEmojiManager from './ServerEmojiManager';
+import ServerStickerManager from './ServerStickerManager';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent } from '../ui/dialog';
 import { ScrollArea } from '../ui/scroll-area';
-import { Info, Shield, Users, Mail, X, Smile } from 'lucide-react';
+import { Info, Shield, Users, Mail, X, Smile, StickyNote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ServerSettings = ({ isOpen, onClose, guild, initialTab = 'info' }) => {
@@ -29,6 +30,12 @@ const ServerSettings = ({ isOpen, onClose, guild, initialTab = 'info' }) => {
             label: 'Emoji',
             icon: Smile,
             component: <ServerEmojiManager guild={guild} />,
+          },
+          {
+            id: 'stickers',
+            label: 'Stickers',
+            icon: StickyNote,
+            component: <ServerStickerManager guild={guild} />,
           },
         ],
       },
