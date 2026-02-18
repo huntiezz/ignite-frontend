@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, desktopCapturer, Menu, shell, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, desktopCapturer, Menu, shell, nativeImage, Notification } = require('electron');
 const { join } = require('path');
 const fs = require('fs');
 
@@ -9,7 +9,7 @@ const createTray = () => {
   let iconPath = join(__dirname, 'tray-icon.ico');
 
   // Check if custom icon exists, otherwise create a minimal one from the app icon
-  if (!fs.existsSync(iconPath)) {
+  if (true) {
     // Try to use app icon or create empty icon
     const icon = nativeImage.createEmpty();
     tray = new Tray(icon);
@@ -131,6 +131,23 @@ const startCore = () => {
     } else {
       console.log('[Badge] Badge icon not found at:', badgePath);
     }
+  });
+
+  ipcMain.handle('notification:show', (_event, { title, body }) => {
+    const notification = new Notification({
+      title: title || 'Ignite',
+      body: body || '',
+      silent: true,
+    });
+
+    notification.on('click', () => {
+      if (mainWindow) {
+        mainWindow.show();
+        mainWindow.focus();
+      }
+    });
+
+    notification.show();
   });
 
   ipcMain.handle('desktop:getSources', async () => {

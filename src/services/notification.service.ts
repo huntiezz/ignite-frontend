@@ -76,10 +76,12 @@ export const NotificationService = {
   },
 
   /**
-   * Show an OS-level desktop notification for an incoming message.
-   * Coordinated across tabs so only one notification is shown.
+   * Show a desktop notification for an incoming message.
+   * Only sends notifications in Electron via IPC — skipped on web.
    */
   showDesktopNotification(event: any) {
+    if (!window.IgniteNative?.isElectron) return;
+
     // Skip if another tab already handled this message
     if (recentlyNotified.has(event.message.id)) return;
 
@@ -87,36 +89,10 @@ export const NotificationService = {
     desktopNotifChannel?.postMessage({ type: 'notified', id: event.message.id });
     setTimeout(() => recentlyNotified.delete(event.message.id), 10000);
 
-    // Check permission
-    if (typeof Notification === 'undefined') return;
-    if (Notification.permission === 'denied') return;
-
-    if (Notification.permission !== 'granted') {
-      Notification.requestPermission().then((permission) => {
-        if (permission === 'granted') {
-          this._createNotification(event);
-        }
-      });
-      return;
-    }
-
-    this._createNotification(event);
-  },
-
-  _createNotification(event: any) {
     const author = event.message.author;
-    const displayName = author.name || author.username || 'Someone';
+    const title = author.name || author.username || 'Someone';
     const body = truncate(event.message.content || '', 100);
 
-    const notification = new Notification(displayName, {
-      body,
-      tag: `ignite-msg-${event.message.id}`,
-      silent: true, // We already play our own sound
-    });
-
-    notification.onclick = () => {
-      window.focus();
-      notification.close();
-    };
+    window.IgniteNative.showNotification({ title, body });
   },
 };

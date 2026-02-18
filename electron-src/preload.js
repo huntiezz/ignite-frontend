@@ -17,6 +17,7 @@ if (window.opener === null) {
         getDesktopSources: () => ipcRenderer.invoke('desktop:getSources'),
         openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
         setBadgeCount: (count) => ipcRenderer.invoke('badge:set', count),
+        showNotification: (opts) => ipcRenderer.invoke('notification:show', opts),
     };
     contextBridge.exposeInMainWorld('IgniteNative', IgniteNative);
 }
