@@ -8,6 +8,7 @@ import { Separator } from '../ui/separator';
 import { Switch } from '../ui/switch';
 import { Camera, Pencil, Trash2 } from 'lucide-react';
 import ImageCropperDialog from './ImageCropperDialog';
+import GuildCard from '../Guild/GuildCard';
 
 const CDN_BASE = import.meta.env.VITE_CDN_BASE_URL;
 
@@ -193,43 +194,16 @@ const ServerInfo = ({ guild }) => {
       ) : (
         <>
           {/* ── Preview card (read-only) ── */}
-          <div className="rounded-lg border border-border bg-card">
-            {/* Banner */}
-            <div className="relative h-32 overflow-hidden rounded-t-lg bg-muted">
-              {displayBannerUrl && (
-                <img
-                  src={displayBannerUrl}
-                  alt="Server banner"
-                  className="h-full w-full object-cover"
-                />
-              )}
-            </div>
-
-            {/* Icon + name row */}
-            <div className="flex items-end gap-4 px-5 pb-4">
-              <div className="-mt-10 h-20 w-20 flex-shrink-0 overflow-hidden rounded-full border-4 border-card bg-muted">
-                {displayIconUrl ? (
-                  <img
-                    src={displayIconUrl}
-                    alt="Server icon"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full select-none items-center justify-center bg-muted text-base font-bold text-foreground">
-                    {guildInitials}
-                  </div>
-                )}
-              </div>
-              <div className="mb-1 min-w-0">
-                <p className="truncate text-lg font-bold">
-                  {profile?.name || guild?.name || 'Unnamed Server'}
-                </p>
-                {profile?.description && (
-                  <p className="truncate text-xs text-muted-foreground">{profile.description}</p>
-                )}
-              </div>
-            </div>
-          </div>
+          <GuildCard
+            guild={{
+              ...guild,
+              name: profile?.name || guild?.name || 'Unnamed Server',
+              description: profile?.description || guild?.description,
+              icon_file_id: pendingIcon === null ? (profile?.icon_file_id ?? guild?.icon_file_id) : undefined,
+              banner_file_id: pendingBanner === null ? (profile?.banner_file_id ?? guild?.banner_file_id) : undefined,
+            }}
+            className="pointer-events-none max-w-sm"
+          />
 
           {/* ── Server Icon ── */}
           <div className="space-y-3">
@@ -374,6 +348,33 @@ const ServerInfo = ({ guild }) => {
               </div>
             </div>
           )}
+
+          <Separator />
+
+          {/* ── Server Discovery ── */}
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Server Discovery
+              </Label>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Allow this server to appear in Server Discovery so anyone can find and join it.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={Boolean(profile?.is_discoverable)}
+                onCheckedChange={async (checked) => {
+                  await handleSave({ is_discoverable: checked });
+                }}
+                disabled={saving}
+              />
+              <span className="text-sm">
+                {profile?.is_discoverable ? 'Discoverable' : 'Not discoverable'}
+              </span>
+            </div>
+          </div>
 
           <Separator />
 
