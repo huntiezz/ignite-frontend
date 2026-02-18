@@ -33,7 +33,7 @@ export const NotificationService = {
   notifyNewMessage(event: any) {
     const user = useUsersStore.getState().getCurrentUser();
     const { channels } = useChannelsStore.getState();
-    const { activeChannelId, blockedUserIds, mutedChannelIds, mutedGuildIds } =
+    const { activeChannelId, blockedUserIds, mutedChannelIds, mutedGuildIds, guildSettings } =
       useNotificationStore.getState();
 
     const channelId: string = event.channel.id;
@@ -42,21 +42,33 @@ export const NotificationService = {
     // 1. Don't notify for own messages
     if (authorId === user?.id) return;
 
-    // 2. Don't notify for blocked users
-    if (blockedUserIds.includes(authorId)) return;
-
-    // 3. Don't notify for muted channels
-    if (mutedChannelIds.includes(channelId)) return;
-
-    // 4. Don't notify for muted guilds
-    const channel = channels.find((c) => String(c.channel_id) === String(channelId));
-    if (channel?.guild_id && mutedGuildIds.includes(String(channel.guild_id))) return;
-
-    // 5. Don't notify if the user is currently viewing this channel
+    // 2. Don't notify if the user is currently viewing this channel
     if (activeChannelId === channelId) return;
+
+    const channel = channels.find((c) => String(c.channel_id) === String(channelId));
 
     // 6. Channel must exist in our store
     if (!channel) return;
+
+    // 7. Apply per-guild notification settings
+    if (channel.guild_id) {
+      const settings = guildSettings[String(channel.guild_id)];
+      if (settings) {
+        // message_notifications: 0 = All, 1 = Only @mentions, 2 = Nothing
+        if (settings.message_notifications == 2) return;
+
+        if (settings.message_notifications == 1) {
+          const mentions = event.message.mentions || [];
+          const isUserMentioned = mentions.some(
+            (m: any) => String(m.user_id) === String(user?.id)
+          );
+          const hasEveryoneMention = !!event.message.mention_everyone && !settings.suppress_everyone;
+          const hasRoleMention = (event.message.mention_roles || []).length > 0 && !settings.suppress_roles;
+
+          if (!isUserMentioned && !hasEveryoneMention && !hasRoleMention) return;
+        }
+      }
+    }
 
     // All checks passed — notify
     SoundService.playNotificationSound(event.message.id);

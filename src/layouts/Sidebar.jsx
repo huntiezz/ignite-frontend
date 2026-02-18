@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Fire, Plus, Compass } from '@phosphor-icons/react';
 import {
   DndContext,
@@ -20,11 +20,25 @@ import useStore from '../hooks/useStore';
 import Avatar from '../components/Avatar';
 import { useFriendsStore } from '../store/friends.store';
 import { ChannelsService } from '../services/channels.service';
+import { GuildsService } from '../services/guilds.service';
 import { useGuildOrder } from '../hooks/useGuildOrder';
 import {
   isChannelUnread as checkChannelUnread,
   getChannelMentionCount as getChannelMentions,
 } from '../utils/unreads.utils';
+import { ContextMenu, ContextMenuTrigger } from '../components/ui/context-menu';
+import GuildContextMenu from '../components/Guild/GuildContextMenu';
+import InviteDialog from '../components/Guild/InviteDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 
 const CDN_BASE = import.meta.env.VITE_CDN_BASE_URL;
 
@@ -73,7 +87,7 @@ const SidebarIcon = ({
   </div>
 );
 
-const SortableGuildIcon = ({ guild, isActive, isUnread, mentionCount, isDragging: globalDragging }) => {
+const SortableGuildIcon = ({ guild, isActive, isUnread, mentionCount, isDragging: globalDragging, onLeave, onInvite }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: String(guild.id),
   });
@@ -90,26 +104,36 @@ const SortableGuildIcon = ({ guild, isActive, isUnread, mentionCount, isDragging
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <Link
-        to={`/channels/${guild.id}`}
-        draggable="false"
-        style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
-      >
-        <SidebarIcon
-          iconUrl={iconUrl}
-          text={guild.name}
-          isServerIcon={true}
-          isActive={isActive}
-          isUnread={isUnread}
-          mentionCount={mentionCount}
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <Link
+            to={`/channels/${guild.id}`}
+            draggable="false"
+            style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
+          >
+            <SidebarIcon
+              iconUrl={iconUrl}
+              text={guild.name}
+              isServerIcon={true}
+              isActive={isActive}
+              isUnread={isUnread}
+              mentionCount={mentionCount}
+            />
+          </Link>
+        </ContextMenuTrigger>
+        <GuildContextMenu
+          guild={guild}
+          onLeave={() => onLeave(guild)}
+          onInvite={() => onInvite(guild)}
         />
-      </Link>
+      </ContextMenu>
     </div>
   );
 };
 
 const Sidebar = () => {
   const { guildId, channelId } = useParams();
+  const navigate = useNavigate();
   const { user } = useStore();
   const { guilds } = useGuildsStore();
   const { channelUnreads, channelUnreadsLoaded } = useUnreadsStore();
@@ -117,6 +141,8 @@ const Sidebar = () => {
   const { requests } = useFriendsStore();
   const [isGuildDialogOpen, setIsGuildDialogOpen] = useState(false);
   const [activeId, setActiveId] = useState(null);
+  const [leaveGuild, setLeaveGuild] = useState(null);
+  const [inviteGuildId, setInviteGuildId] = useState(null);
 
   const { orderedGuilds, reorder } = useGuildOrder(guilds);
 
@@ -226,6 +252,18 @@ const Sidebar = () => {
     });
   }, [unreadDmChannels, channelMessages, channelUnreadsLoaded]);
 
+  const confirmLeave = async () => {
+    if (!leaveGuild?.id) return;
+    try {
+      await GuildsService.leaveGuild(leaveGuild.id);
+      navigate('/channels/@me');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLeaveGuild(null);
+    }
+  };
+
   return (
     <>
       <div className="scrollbar-none relative left-0 top-0 m-0 flex h-full min-w-min flex-col items-center overflow-y-auto border-r border-white/5 bg-[#121214] pt-3 text-white shadow">
@@ -281,6 +319,8 @@ const Sidebar = () => {
                 isUnread={isGuildUnread(guild)}
                 mentionCount={getGuildMentionCount(guild)}
                 isDragging={!!activeId}
+                onLeave={setLeaveGuild}
+                onInvite={(g) => setInviteGuildId(g.id)}
               />
             ))}
           </SortableContext>
@@ -309,6 +349,33 @@ const Sidebar = () => {
       </div>
 
       <GuildDialog open={isGuildDialogOpen} onOpenChange={setIsGuildDialogOpen} />
+
+      <InviteDialog
+        open={!!inviteGuildId}
+        onOpenChange={(open) => !open && setInviteGuildId(null)}
+        guildId={inviteGuildId}
+      />
+
+      <AlertDialog open={!!leaveGuild} onOpenChange={(open) => !open && setLeaveGuild(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave &apos;{leaveGuild?.name}&apos;</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to leave <span className="font-bold text-white">{leaveGuild?.name}</span>? You won&apos;t be
+              able to rejoin this server unless you are re-invited.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmLeave}
+              className="bg-red-500 text-white hover:bg-red-600"
+            >
+              Leave Server
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

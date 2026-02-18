@@ -8,6 +8,7 @@ import { ChannelsService } from './channels.service';
 import { RolesService } from './roles.service';
 import { StickersService } from './stickers.service';
 import { EmojisService } from './emojis.service';
+import { GuildSettingsService } from './guild-settings.service';
 
 export const InitializationService = {
   async initialize() {
@@ -37,6 +38,7 @@ export const InitializationService = {
         FriendsService.loadFriends(),
         FriendsService.loadRequests(),
         UnreadsService.loadUnreads(),
+        GuildSettingsService.loadGuildSettings(),
       ]);
 
       await ChannelsService.loadChannels();

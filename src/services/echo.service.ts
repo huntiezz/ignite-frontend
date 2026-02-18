@@ -2,6 +2,7 @@ import { useAuthStore } from '../store/auth.store';
 import { FriendsService } from './friends.service';
 import { UnreadsService } from './unreads.service';
 import { ChannelsService } from './channels.service';
+import { GuildSettingsService } from './guild-settings.service';
 import { useUsersStore } from '../store/users.store';
 import {
   handleChannelCreated,
@@ -68,6 +69,9 @@ export const EchoService = {
       .listen('.member.typing', ChannelsService.handleMemberTyping)
       .listen('.user.updated', (event: any) => {
         useUsersStore.getState().setUser(event.user.id, event.user);
+      })
+      .listen('.user_guild_settings.updated', (event: any) => {
+        GuildSettingsService.handleGuildSettingsUpdated(event);
       });
   },
 
