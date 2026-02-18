@@ -45,8 +45,8 @@ import { useTypingStore } from '../../store/typing.store';
 import { useUsersStore } from '@/store/users.store';
 import StickerPicker from './StickerPicker';
 import { Sticker } from 'lucide-react';
-import { PermissionsService } from '@/services/permissions.service';
 import { Permissions } from '@/constants/Permissions';
+import { useHasPermission } from '@/hooks/useHasPermission';
 
 const MAX_MESSAGE_LENGTH = 2000;
 const SUGGESTIONS_LIMIT = 10;
@@ -345,12 +345,9 @@ const ChannelInput = ({ channel }) => {
     return (channelMessages[channel.channel_id] || []).find((m) => m.id === replyingId);
   }, [replyingId, channel?.channel_id, channelMessages]);
 
-  // Check if user can send messages in this channel
-  const canSendMessages = useMemo(() => {
-    // DM channels (no guildId) always allow sending
-    if (!guildId || !channel?.channel_id) return true;
-    return PermissionsService.hasPermission(guildId, channel.channel_id, Permissions.SEND_MESSAGES);
-  }, [guildId, channel?.channel_id]);
+  // Check if user can send messages in this channel (DM channels always allow sending)
+  const hasSendPermission = useHasPermission(guildId, channel?.channel_id, Permissions.SEND_MESSAGES);
+  const canSendMessages = !guildId || !channel?.channel_id || hasSendPermission;
 
   const resolveUser = useCallback(
     (id) => {

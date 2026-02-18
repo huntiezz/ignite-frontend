@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import DefaultLayout from './DefaultLayout';
 import ServerSettings from '../components/Settings/ServerSettings';
@@ -8,8 +8,8 @@ import { useChannelsStore } from '../store/channels.store';
 import GuildSidebar from '@/components/Guild/GuildSidebar';
 import CreateGuildChannelDialog from '@/components/Guild/CreateGuildChannelDialog';
 import CreateGuildCategoryDialog from '@/components/Guild/CreateGuildCategoryDialog';
-import { PermissionsService } from '@/services/permissions.service';
 import { Permissions } from '@/constants/Permissions';
+import { useHasPermission } from '@/hooks/useHasPermission';
 
 const GuildLayout = ({ children, guild }) => {
   const store = useStore();
@@ -23,16 +23,8 @@ const GuildLayout = ({ children, guild }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { channels } = useChannelsStore();
 
-  // Check permissions using PermissionsService instead of owner-only checks
-  const canManageGuild = useMemo(() => {
-    if (!guild?.id) return false;
-    return PermissionsService.hasPermission(guild.id, null, Permissions.MANAGE_GUILD);
-  }, [guild?.id]);
-
-  const canManageChannels = useMemo(() => {
-    if (!guild?.id) return false;
-    return PermissionsService.hasPermission(guild.id, null, Permissions.MANAGE_CHANNELS);
-  }, [guild?.id]);
+  const canManageGuild = useHasPermission(guild?.id, null, Permissions.MANAGE_GUILD);
+  const canManageChannels = useHasPermission(guild?.id, null, Permissions.MANAGE_CHANNELS);
 
   const openServerSettings = useCallback(
     ({ tab = 'info', channelId = null } = {}) => {

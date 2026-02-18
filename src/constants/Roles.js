@@ -83,8 +83,6 @@ export const PERMISSION_GROUPS = [
     permissions: [
       1n << 11n, // Send Messages
       1n << 13n, // Manage Messages
-      1n << 38n, // Send in Threads
-      1n << 34n, // Manage Threads
       1n << 14n, // Embed Links
       1n << 15n, // Attach Files
       1n << 6n, // Add Reactions

@@ -57,8 +57,6 @@ export const PermissionsService = {
       }
     }
 
-    console.log(permissions); 
-
     // If no channel specified, check guild-level permissions
     if (!channelId) {
       return (permissions & permission) === permission;
@@ -91,8 +89,6 @@ export const PermissionsService = {
         permissions |= allowed;
       }
     }
-
-    console.log(typeof(permission), typeof(permissions));
 
     // Check if the user has the requested permission
     return (permissions & permission) === permission;

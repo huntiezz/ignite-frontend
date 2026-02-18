@@ -4,8 +4,8 @@ import { InputGroup, InputGroupInput } from '../ui/input-group';
 import api from '../../api';
 import { useGuildsStore } from '../../store/guilds.store';
 import { Slash } from 'lucide-react';
-import { PermissionsService } from '@/services/permissions.service';
 import { Permissions } from '@/constants/Permissions';
+import { useHasPermission } from '@/hooks/useHasPermission';
 import { toast } from 'sonner';
 
 const permissions = {
@@ -23,11 +23,7 @@ const OverviewTab = ({ guild, channel }) => {
   const [description, setDescription] = useState(channel?.description || '');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Check if user can manage channels
-  const canManageChannels = useMemo(() => {
-    if (!guild?.id) return false;
-    return PermissionsService.hasPermission(guild.id, null, Permissions.MANAGE_CHANNELS);
-  }, [guild?.id]);
+  const canManageChannels = useHasPermission(guild?.id, null, Permissions.MANAGE_CHANNELS);
 
   // Update local state if the channel prop changes externally
   useEffect(() => {
@@ -207,11 +203,7 @@ const PermissionsTab = ({ guild, channel }) => {
   const [allowedPermissions, setAllowedPermissions] = useState(0);
   const [deniedPermissions, setDeniedPermissions] = useState(0);
 
-  // Check if user can manage channels
-  const canManageChannels = useMemo(() => {
-    if (!guild?.id) return false;
-    return PermissionsService.hasPermission(guild.id, null, Permissions.MANAGE_CHANNELS);
-  }, [guild?.id]);
+  const canManageChannels = useHasPermission(guild?.id, null, Permissions.MANAGE_CHANNELS);
 
   const hasChanged = useMemo(() => {
     const savedPerm = savedPermissionsByRole[selectedRoleId];

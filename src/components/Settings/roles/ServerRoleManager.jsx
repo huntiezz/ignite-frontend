@@ -12,8 +12,8 @@ const ServerRoleManager = ({ guild }) => {
   const [localRoles, setLocalRoles] = useState([]);
   const [selectedRoleId, setSelectedRoleId] = useState(EVERYONE_ROLE_ID);
 
-  const [activePermissions, setActivePermissions] = useState(0);
-  const [originalPermissions, setOriginalPermissions] = useState(0);
+  const [activePermissions, setActivePermissions] = useState(0n);
+  const [originalPermissions, setOriginalPermissions] = useState(0n);
   const [roleName, setRoleName] = useState('@everyone');
   const [originalName, setOriginalName] = useState('@everyone');
   const [roleColor, setRoleColor] = useState('#99aab5');
@@ -45,7 +45,7 @@ const ServerRoleManager = ({ guild }) => {
   // Initialize @everyone permissions on mount
   useEffect(() => {
     if (selectedRoleId === EVERYONE_ROLE_ID) {
-      const perms = Number(guild.default_permissions || 0);
+      const perms = BigInt(guild.default_permissions || 0);
       setActivePermissions(perms);
       setOriginalPermissions(perms);
     }
@@ -71,7 +71,7 @@ const ServerRoleManager = ({ guild }) => {
     setSelectedRoleId(roleId);
 
     if (isEveryone(roleId)) {
-      const perms = Number(guild.default_permissions || 0);
+      const perms = BigInt(guild.default_permissions || 0);
       setActivePermissions(perms);
       setOriginalPermissions(perms);
       setRoleName('@everyone');
@@ -82,8 +82,8 @@ const ServerRoleManager = ({ guild }) => {
       const role = localRoles.find((r) => r.id === roleId);
       if (!role) return;
       const color = intToHex(role.color);
-      setActivePermissions(Number(role.permissions || 0));
-      setOriginalPermissions(Number(role.permissions || 0));
+      setActivePermissions(BigInt(role.permissions || 0));
+      setOriginalPermissions(BigInt(role.permissions || 0));
       setRoleName(role.name || '');
       setOriginalName(role.name || '');
       setRoleColor(color);
@@ -128,7 +128,7 @@ const ServerRoleManager = ({ guild }) => {
           promises.push(
             api
               .patch(`/guilds/${guild.id}/profile`, {
-                default_permissions: activePermissions,
+                default_permissions: activePermissions.toString(),
               })
               .then(() => {
                 const { editGuild } = useGuildsStore.getState();
@@ -146,7 +146,7 @@ const ServerRoleManager = ({ guild }) => {
           promises.push(
             RolesService.updateGuildRole(guild.id, selectedRoleId, {
               name: roleName,
-              permissions: activePermissions,
+              permissions: activePermissions.toString(),
               color: hexToInt(roleColor),
             })
           );
@@ -192,7 +192,7 @@ const ServerRoleManager = ({ guild }) => {
       toast.success('Role deleted');
       setSelectedRoleId(EVERYONE_ROLE_ID);
       // Reset to @everyone
-      const perms = Number(guild.default_permissions || 0);
+      const perms = BigInt(guild.default_permissions || 0);
       setActivePermissions(perms);
       setOriginalPermissions(perms);
       setRoleName('@everyone');
@@ -207,8 +207,7 @@ const ServerRoleManager = ({ guild }) => {
   };
 
   const handleToggle = (bit) => {
-    const bitNum = Number(bit);
-    setActivePermissions((prev) => (prev & bitNum ? prev & ~bitNum : prev | bitNum));
+    setActivePermissions((prev) => (prev & bit ? prev & ~bit : prev | bit));
   };
 
   const handleReset = () => {

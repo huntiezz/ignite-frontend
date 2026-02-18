@@ -70,15 +70,7 @@ const InvitePage = () => {
       setJoining(true);
       await InvitesService.acceptInvite(code);
 
-      // Navigate to the guild's first channel
-      const { guilds } = useGuildsStore.getState();
-      const guild = guilds.find((g) => g.id === invite.guild.id);
-      if (guild && guild.channels && guild.channels.length > 0) {
-        const firstChannel = guild.channels[0];
-        navigate(`/channels/${guild.id}/${firstChannel.channel_id}`, { replace: true });
-      } else {
-        navigate(`/channels/${invite.guild.id}`, { replace: true });
-      }
+      navigate('/channels/@me');
     } catch (err) {
       console.error('Failed to join server:', err);
     } finally {
@@ -102,8 +94,8 @@ const InvitePage = () => {
     try {
       setJoining(true);
       await InvitesService.acceptInviteWithQuickAccount(code, username);
-      // Redirect to the server after successful account creation and join
-      navigate(`/channels/${invite.guild.id}`, { replace: true });
+      // Navigate to the dashboard after successful account creation and join
+      navigate('/channels/@me', { replace: true });
     } catch (err) {
       console.error('Failed to create account and join server:', err);
       setUsernameError(err.response?.data?.message || 'Failed to create account');

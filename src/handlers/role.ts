@@ -1,4 +1,4 @@
-import { RolesService } from '../../services/roles.service';
+import { RolesService } from '../services/roles.service';
 import type { GatewayHandlerContext } from './types';
 
 export function handleRoleCreated(data: any, _context: GatewayHandlerContext): void {

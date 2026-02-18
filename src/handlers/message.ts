@@ -1,4 +1,4 @@
-import { ChannelsService } from '../../services/channels.service';
+import { ChannelsService } from '../services/channels.service';
 import type { GatewayHandlerContext } from './types';
 
 export function handleMessageCreated(data: any, _context: GatewayHandlerContext): void {

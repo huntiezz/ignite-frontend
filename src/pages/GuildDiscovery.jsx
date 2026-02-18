@@ -131,10 +131,7 @@ const GuildDiscovery = () => {
   }, [search, fetchGuilds]);
 
   const handleJoin = async (guildId) => {
-    const guild = await GuildsService.joinGuild(guildId);
-    if (guild) {
-      navigate(`/channels/${guild.id}`);
-    }
+    await GuildsService.joinGuild(guildId);
   };
 
   return (

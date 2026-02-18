@@ -1,4 +1,4 @@
-import { useUsersStore } from '../../store/users.store';
+import { useUsersStore } from '../store/users.store';
 import type { GatewayHandlerContext } from './types';
 
 export function handleUserUpdated(data: any, _context: GatewayHandlerContext): void {

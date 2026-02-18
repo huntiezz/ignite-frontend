@@ -1,8 +1,8 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GuildsService } from '@/services/guilds.service';
-import { PermissionsService } from '@/services/permissions.service';
 import { Permissions } from '@/constants/Permissions';
+import { useHasPermission } from '@/hooks/useHasPermission';
 import {
   CaretDown,
   Gear,
@@ -40,13 +40,8 @@ const GuildSidebarHeader = ({
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
 
-  const canOpenServerSettings = useMemo(() => {
-    return PermissionsService.hasPermission(guild?.id, null, Permissions.MANAGE_GUILD);
-  }, [guild?.id]);
-
-  const canInvite = useMemo(() => {
-    return PermissionsService.hasPermission(guild?.id, null, Permissions.CREATE_INSTANT_INVITE);
-  }, [guild?.id]);
+  const canOpenServerSettings = useHasPermission(guild?.id, null, Permissions.MANAGE_GUILD);
+  const canInvite = useHasPermission(guild?.id, null, Permissions.CREATE_INSTANT_INVITE);
 
   const handleLeave = useCallback(
     (e) => {

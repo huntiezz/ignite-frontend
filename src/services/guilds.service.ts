@@ -128,13 +128,9 @@ export const GuildsService = {
   },
 
   async joinGuild(guildId: string) {
-    const { addGuild } = useGuildsStore.getState();
     try {
-      const { data } = await api.post(`/guilds/${guildId}/join`);
-      addGuild(data);
-      await ChannelsService.loadChannels();
+      await api.post(`/guilds/${guildId}/join`);
       toast.success('Joined server successfully.');
-      return data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Unable to join server.');
       throw error;

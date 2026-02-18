@@ -1,4 +1,4 @@
-import { StickersService } from '../../services/stickers.service';
+import { StickersService } from '../services/stickers.service';
 import type { GatewayHandlerContext } from './types';
 
 export function handleStickerCreated(data: any, _context: GatewayHandlerContext): void {

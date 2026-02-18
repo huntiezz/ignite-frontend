@@ -17,8 +17,8 @@ import MessageReactions from './MessageReactions';
 import MessageActions from './MessageActions';
 import MessageContextMenu from './MessageContextMenu';
 import MessageReplyBar from './MessageReplyBar';
-import { PermissionsService } from '@/services/permissions.service';
 import { Permissions } from '@/constants/Permissions';
+import { useHasPermission } from '@/hooks/useHasPermission';
 import { useChannelContext } from '../../contexts/ChannelContext.jsx';
 
 const ChannelMessage = memo(
@@ -57,15 +57,8 @@ const ChannelMessage = memo(
       [message.author.id, store.user.id]
     );
 
-    const canDelete = useMemo(() => {
-      if (message.author.id === store.user.id) return true;
-      if (!guildId || !message.channel_id) return false;
-      return PermissionsService.hasPermission(
-        guildId,
-        message.channel_id,
-        Permissions.MANAGE_MESSAGES
-      );
-    }, [guildId, message.channel_id, message.author.id, store.user.id]);
+    const hasManageMessages = useHasPermission(guildId, message.channel_id, Permissions.MANAGE_MESSAGES);
+    const canDelete = message.author.id === store.user.id || hasManageMessages;
 
     const isMentioned = useMemo(() => {
       if (!message.mentions || !store.user?.id) return false;

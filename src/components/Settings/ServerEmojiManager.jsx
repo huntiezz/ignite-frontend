@@ -30,13 +30,7 @@ const ServerEmojiManager = ({ guild }) => {
   const fileInputRef = useRef(null);
 
   const guildEmojis = useEmojisStore((state) => state.guildEmojis[guild.id] || []);
-
-  useEffect(() => {
-    if (guild?.id) {
-      EmojisService.loadGuildEmojis(guild.id);
-    }
-  }, [guild?.id]);
-
+  
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';

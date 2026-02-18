@@ -13,7 +13,7 @@ const RolePermissions = ({ activePermissions, onTogglePermission }) => {
             </h4>
             <div className="space-y-2">
               {group.permissions.map((permBit) => {
-                const isEnabled = (activePermissions & Number(permBit)) !== 0;
+                const isEnabled = (activePermissions & permBit) !== 0n;
                 return (
                   <div
                     key={permBit.toString()}

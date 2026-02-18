@@ -1,5 +1,5 @@
-import { GuildsService } from '../../services/guilds.service';
-import { ChannelsService } from '../../services/channels.service';
+import { GuildsService } from '../services/guilds.service';
+import { ChannelsService } from '../services/channels.service';
 import type { GatewayHandlerContext } from './types';
 
 export function handleMemberJoined(data: any, context: GatewayHandlerContext): void {

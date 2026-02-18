@@ -23,10 +23,6 @@ export const InvitesService = {
   async acceptInvite(code) {
     try {
       await api.post(`/invites/${code}`);
-      await GuildsService.loadGuilds();
-      await ChannelsService.loadChannels();
-      await EmojisService.loadAllGuildEmojis();
-      await StickersService.loadAllGuildStickers();
       toast.success('Joined server successfully.');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to join server.');

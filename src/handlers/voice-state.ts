@@ -1,4 +1,4 @@
-import { useChannelsStore } from '../../store/channels.store';
+import { useChannelsStore } from '../store/channels.store';
 import type { GatewayHandlerContext } from './types';
 
 export function handleVoiceStateJoined(data: any, context: GatewayHandlerContext): void {

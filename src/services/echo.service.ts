@@ -1,9 +1,4 @@
 import { useAuthStore } from '../store/auth.store';
-import { FriendsService } from './friends.service';
-import { UnreadsService } from './unreads.service';
-import { ChannelsService } from './channels.service';
-import { GuildSettingsService } from './guild-settings.service';
-import { useUsersStore } from '../store/users.store';
 import {
   handleChannelCreated,
   handleChannelDeleted,
@@ -12,7 +7,12 @@ import {
   handleChannelUpdated,
   handleEmojiCreated,
   handleEmojiDeleted,
+  handleFriendRequestAccepted,
+  handleFriendRequestCreated,
+  handleFriendRequestDeleted,
   handleGuildDeleted,
+  handleGuildJoined,
+  handleGuildSettingsUpdated,
   handleGuildUpdated,
   handleMemberJoined,
   handleMemberLeft,
@@ -26,11 +26,12 @@ import {
   handleRoleUpdated,
   handleStickerCreated,
   handleStickerDeleted,
+  handleUnreadUpdated,
   handleUserUpdated,
   handleVoiceStateJoined,
   handleVoiceStateLeft,
   handleVoiceStateUpdate,
-} from '../handlers/guild';
+} from '../handlers';
 
 export const EchoService = {
   activeGuildSubscriptions: new Set<string>(),
@@ -44,35 +45,24 @@ export const EchoService = {
 
     console.log(`Subscribing to private.user.${userId}`);
 
+    const context = { guildId: '', currentUserId: userId };
+
     this.userChannelSubscription = window.Echo.private(`user.${userId}`)
-      .listen('.friendrequest.created', (event: any) => {
-        console.log('Received friend request event:', event);
-        FriendsService.loadRequests();
+      .listen('.friendrequest.created', handleFriendRequestCreated)
+      .listen('.friendrequest.deleted', handleFriendRequestDeleted)
+      .listen('.friendrequest.accepted', handleFriendRequestAccepted)
+      .listen('.guild.joined', (data: any) => {
+        handleGuildJoined(data);
+        this.subscribeToGuild(data.guild.id);
       })
-      .listen('.friendrequest.deleted', (event: any) => {
-        console.log('Friend request deleted event:', event);
-        FriendsService.loadRequests();
-      })
-      .listen('.friendrequest.accepted', (event: any) => {
-        console.log('Friend request accepted event:', event);
-        FriendsService.loadFriends();
-        FriendsService.loadRequests();
-      })
-      .listen('.unread.updated', (event: any) => {
-        console.log('Unread updated event:', event);
-        UnreadsService.updateUnread(event.unread.channel_id, event.unread);
-      })
-      .listen('.message.created', ChannelsService.handleMessageCreated)
-      .listen('.message.updated', ChannelsService.handleMessageUpdated)
-      .listen('.message.deleted', ChannelsService.handleMessageDeleted)
-      .listen('.channel.created', ChannelsService.handleChannelCreated)
-      .listen('.member.typing', ChannelsService.handleMemberTyping)
-      .listen('.user.updated', (event: any) => {
-        useUsersStore.getState().setUser(event.user.id, event.user);
-      })
-      .listen('.user_guild_settings.updated', (event: any) => {
-        GuildSettingsService.handleGuildSettingsUpdated(event);
-      });
+      .listen('.unread.updated', handleUnreadUpdated)
+      .listen('.message.created', (data: any) => handleMessageCreated(data, context))
+      .listen('.message.updated', (data: any) => handleMessageUpdated(data, context))
+      .listen('.message.deleted', (data: any) => handleMessageDeleted(data, context))
+      .listen('.channel.created', (data: any) => handleChannelCreated(data, context))
+      .listen('.member.typing', (data: any) => handleMemberTyping(data, context))
+      .listen('.user.updated', (data: any) => handleUserUpdated(data, context))
+      .listen('.user_guild_settings.updated', handleGuildSettingsUpdated);
   },
 
   unsubscribeFromUserChannel(userId: string) {
@@ -100,7 +90,10 @@ export const EchoService = {
       .listen('.channel_permission.updated', (data: any) => handleChannelPermissionUpdated(data, context))
       .listen('.emoji.created', (data: any) => handleEmojiCreated(data, context))
       .listen('.emoji.deleted', (data: any) => handleEmojiDeleted(data, context))
-      .listen('.guild.deleted', (data: any) => handleGuildDeleted(data, context))
+      .listen('.guild.deleted', (data: any) => {
+        handleGuildDeleted(data, context);
+        this.unsubscribeFromGuild(data.guild.id);
+      })
       .listen('.guild.updated', (data: any) => handleGuildUpdated(data, context))
       .listen('.member.joined', (data: any) => handleMemberJoined(data, context))
       .listen('.member.left', (data: any) => handleMemberLeft(data, context))

@@ -17,8 +17,8 @@ import { useGuildsStore } from '../../store/guilds.store';
 import { useRolesStore } from '../../store/roles.store';
 import { useGuildContext } from '../../contexts/GuildContext';
 import { RolesService } from '../../services/roles.service';
-import { PermissionsService } from '@/services/permissions.service';
 import { Permissions } from '@/constants/Permissions';
+import { useHasPermission } from '@/hooks/useHasPermission';
 
 const intToHex = (intColor) => {
   return `#${intColor.toString(16).padStart(6, '0')}`;
@@ -56,20 +56,8 @@ const GuildMemberContextMenu = ({ user, onViewProfile }) => {
     }
   };
 
-  const canKickMember = useMemo(() => {
-    // Cannot kick yourself
-    if (user.id === store.user.id) return false;
-
-    const currentMember = guildMembers[guildId]?.find((m) => m.user_id === store.user.id);
-    if (!currentMember) return false;
-
-    if (!PermissionsService.hasPermission(guildId, null, Permissions.KICK_MEMBERS)) {
-      return false;
-    }
-
-    // TODO: Check role hierarchy here
-    return true;
-  }, [guildMembers, guildId, store.user.id, user.id]);
+  const hasKickPermission = useHasPermission(guildId, null, Permissions.KICK_MEMBERS);
+  const canKickMember = user.id !== store.user.id && hasKickPermission;
 
   const isFriend = useMemo(() => friends.some((f) => f.id === user.id), [friends, user.id]);
   const hasSentRequest = useMemo(
