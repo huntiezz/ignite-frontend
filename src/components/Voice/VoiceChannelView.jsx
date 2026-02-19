@@ -1,7 +1,17 @@
 import { useEffect, useRef, useMemo, useState } from 'react';
 import { Track } from 'livekit-client';
-import { MicrophoneSlash, SpeakerSlash } from '@phosphor-icons/react';
+import {
+  MicrophoneSlash,
+  SpeakerSlash,
+  Microphone,
+  VideoCamera,
+  VideoCameraSlash,
+  Monitor,
+  PhoneDisconnect,
+  DotsThree,
+} from '@phosphor-icons/react';
 import { useVoiceStore } from '@/store/voice.store';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useUsersStore } from '@/store/users.store';
 import useStore from '@/hooks/useStore';
 import { VoiceService } from '@/services/voice.service';
@@ -40,7 +50,7 @@ const ScreenShareView = ({ participantIdentity }) => {
 };
 
 const VoiceChannelView = ({ channel }) => {
-  const { participants, connectionState } = useVoiceStore();
+  const { participants, connectionState, isMuted, isCameraOn, isScreenSharing } = useVoiceStore();
   const currentUser = useStore((s) => s.user);
   const usersStore = useUsersStore();
 
@@ -129,7 +139,7 @@ const VoiceChannelView = ({ channel }) => {
 
   // Connected — show participants
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-black px-4 py-20">
+    <div className="group relative flex flex-1 flex-col overflow-hidden bg-black pb-24 pt-4 px-4">
       {screenSharer && isWatchingScreen ? (
         // Screenshare layout: main screenshare + participant strip
         <div className="flex flex-1 flex-col gap-3 overflow-hidden">
@@ -187,6 +197,102 @@ const VoiceChannelView = ({ channel }) => {
           </div>
         </div>
       )}
+
+      {/* Floating Voice Controls */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-4 flex translate-y-2 justify-center gap-4 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+        {/* Group 1: Mic + Camera */}
+        <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-[#1e1e22]/90 p-2 shadow-2xl backdrop-blur-md">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => VoiceService.toggleMute()}
+                className={`flex size-10 items-center justify-center rounded-xl transition-colors ${
+                  isMuted
+                    ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                    : 'text-gray-300 hover:bg-white/10'
+                }`}
+              >
+                {isMuted ? (
+                  <MicrophoneSlash className="size-5" weight="fill" />
+                ) : (
+                  <Microphone className="size-5" weight="fill" />
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">{isMuted ? 'Unmute' : 'Mute'}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => VoiceService.toggleCamera()}
+                className={`flex size-10 items-center justify-center rounded-xl transition-colors ${
+                  isCameraOn
+                    ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                    : 'text-gray-300 hover:bg-white/10'
+                }`}
+              >
+                {isCameraOn ? (
+                  <VideoCamera className="size-5" weight="fill" />
+                ) : (
+                  <VideoCameraSlash className="size-5" weight="fill" />
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              {isCameraOn ? 'Turn Off Camera' : 'Turn On Camera'}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Group 2: Screen Share + Options */}
+        <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-[#1e1e22]/90 p-2 shadow-2xl backdrop-blur-md">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => VoiceService.toggleScreenShare()}
+                className={`flex size-10 items-center justify-center rounded-xl transition-colors ${
+                  isScreenSharing
+                    ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                    : 'text-gray-300 hover:bg-white/10'
+                }`}
+              >
+                <Monitor className="size-5" weight="fill" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              {isScreenSharing ? 'Stop Sharing' : 'Share Screen'}
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="flex size-10 items-center justify-center rounded-xl text-gray-300 transition-colors hover:bg-white/10"
+              >
+                <DotsThree className="size-5" weight="bold" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">More options</TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Group 3: End Call */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => VoiceService.leaveVoiceChannel()}
+              className="flex size-14 items-center justify-center rounded-2xl bg-red-500 text-white shadow-2xl transition-colors hover:bg-red-600"
+            >
+              <PhoneDisconnect className="size-5" weight="fill" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">Leave Voice</TooltipContent>
+        </Tooltip>
+      </div>
     </div>
   );
 };
