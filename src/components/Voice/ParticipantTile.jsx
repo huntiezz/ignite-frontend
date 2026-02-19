@@ -56,9 +56,9 @@ const ParticipantTile = ({ participant }) => {
       {/* Bottom overlay bar */}
       <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-4 bg-gradient-to-t from-black/60 to-transparent p-4">
         <span className="inline-flex h-8 items-center gap-2 truncate rounded-sm bg-black/50 px-3 py-1.5 text-sm font-medium text-white">
-          {participant.isScreenSharing && (
+          {/* {participant.isScreenSharing && (
             <Monitor className="size-4 text-green-400" weight="fill" />
-          )}
+          )} */}
           {participant.isMuted && <MicrophoneSlash className="size-4 text-red-400" />}
           <span className="hidden group-hover:inline">{participant.name}</span>
         </span>

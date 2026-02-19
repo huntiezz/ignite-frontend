@@ -10,6 +10,7 @@ import {
   Monitor,
   PhoneDisconnect,
   DotsThree,
+  ArrowLeft,
 } from '@phosphor-icons/react';
 import { useVoiceStore } from '@/store/voice.store';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -50,14 +51,94 @@ const ScreenShareView = ({ participantIdentity }) => {
   );
 };
 
+const ScreenShareTile = ({ participant, onWatch }) => {
+  const videoRef = useRef(null);
+  const room = useVoiceStore((s) => s.room);
+  const [trackInfo, setTrackInfo] = useState(null);
+
+  const isLocal = room?.localParticipant?.identity === participant.identity;
+
+  useEffect(() => {
+    if (!isLocal || !room || !videoRef.current) return;
+
+    const screenPub = room.localParticipant.getTrackPublication(Track.Source.ScreenShare);
+    if (!screenPub?.track) return;
+
+    const videoEl = videoRef.current;
+    screenPub.track.attach(videoEl);
+
+    const settings = screenPub.track.mediaStreamTrack?.getSettings();
+    if (settings?.height) {
+      setTrackInfo({ height: settings.height, fps: Math.round(settings.frameRate ?? 0) });
+    }
+
+    const handleVisibility = () => {
+      if (!videoRef.current) return;
+      if (document.hidden) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play().catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      screenPub.track?.detach(videoEl);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [isLocal, room]);
+
+  const resLabel = trackInfo ? `${trackInfo.height}P ${trackInfo.fps}FPS` : null;
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onWatch}
+      onKeyDown={(e) => e.key === 'Enter' && onWatch()}
+      className="group/tile relative flex cursor-pointer items-center justify-center overflow-hidden rounded-xl bg-[#1e1f22]"
+    >
+      {isLocal && (
+        <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 size-full object-cover" />
+      )}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#101113] to-transparent" />
+
+      {/* Hover overlay */}
+      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-150 group-hover/tile:opacity-100">
+        <span className="rounded-lg bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm">
+          Watch Stream
+        </span>
+      </div>
+
+      {/* Top-right badges */}
+      <div className="absolute right-3 top-3 flex items-center gap-1.5">
+        {resLabel && (
+          <span className="rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+            {resLabel}
+          </span>
+        )}
+        <span className="rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+          LIVE
+        </span>
+      </div>
+
+      <div className="absolute inset-x-0 bottom-0 flex items-center bg-gradient-to-t from-black/60 to-transparent p-4">
+        <span className="inline-flex h-8 items-center gap-2 truncate rounded-sm bg-black/50 px-3 py-1.5 text-sm font-medium text-white">
+          <Monitor className="size-4 text-green-400" weight="fill" />
+          {participant.name}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 const VoiceChannelView = ({ channel }) => {
   const { participants, connectionState, isMuted, isCameraOn, isScreenSharing } = useVoiceStore();
   const currentUser = useStore((s) => s.user);
   const usersStore = useUsersStore();
 
-  const voiceStates = channel?.voice_states || [];
-
   const voiceStateUsers = useMemo(() => {
+    const voiceStates = channel?.voice_states || [];
     return voiceStates.map((vs) => {
       const user =
         String(vs.user_id) === String(currentUser?.id)
@@ -71,10 +152,11 @@ const VoiceChannelView = ({ channel }) => {
         selfDeaf: vs.self_deaf,
       };
     });
-  }, [voiceStates, currentUser, usersStore]);
+  }, [channel?.voice_states, currentUser, usersStore]);
 
   const screenSharer = useMemo(() => participants.find((p) => p.isScreenSharing), [participants]);
   const [isWatchingScreen, setIsWatchingScreen] = useState(false);
+  const totalTiles = participants.length + (screenSharer ? 1 : 0);
 
   // Not connected — show a join prompt with current voice state users
   if (connectionState === 'disconnected') {
@@ -143,59 +225,40 @@ const VoiceChannelView = ({ channel }) => {
     <div className="group relative flex flex-1 flex-col overflow-hidden bg-black px-4 pt-14 pb-24">
       {screenSharer && isWatchingScreen ? (
         // Screenshare layout: main screenshare + participant strip
-        <div className="flex flex-1 flex-col gap-3 overflow-hidden">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-300">{screenSharer.name} is sharing their screen</p>
-            <button
-              type="button"
-              onClick={() => setIsWatchingScreen(false)}
-              className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-red-700"
-            >
-              Stop Watching
-            </button>
-          </div>
-          <div className="flex flex-1 gap-3 overflow-hidden">
-            <ScreenShareView participantIdentity={screenSharer.identity} />
-            <div className="flex w-60 shrink-0 flex-col gap-2 overflow-y-auto">
-              {participants.map((p) => (
-                <div key={p.identity} className="aspect-video">
-                  <ParticipantTile participant={p} />
-                </div>
-              ))}
-            </div>
+        <div className="flex flex-1 gap-3 overflow-hidden">
+          <ScreenShareView participantIdentity={screenSharer.identity} />
+          <div className="flex w-60 shrink-0 flex-col gap-2 overflow-y-auto">
+            {participants.map((p) => (
+              <div key={p.identity} className="aspect-video">
+                <ParticipantTile participant={p} />
+              </div>
+            ))}
           </div>
         </div>
       ) : (
         // Grid layout
-        <div className="flex flex-1 flex-col gap-3 overflow-hidden">
-          {screenSharer && (
-            <div className="flex items-center justify-between rounded-md bg-gray-600 px-3 py-2">
-              <p className="text-sm text-gray-300">{screenSharer.name} is sharing their screen</p>
-              <button
-                type="button"
-                onClick={() => setIsWatchingScreen(true)}
-                className="rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-green-700"
-              >
-                Watch Stream
-              </button>
-            </div>
-          )}
-          <div
-            className={`grid flex-1 gap-3 ${
-              participants.length === 1
-                ? 'grid-cols-1'
-                : participants.length <= 4
-                  ? 'grid-cols-2'
-                  : 'grid-cols-3'
-            }`}
-            style={{
-              gridAutoRows: participants.length <= 2 ? '1fr' : 'minmax(0, 1fr)',
-            }}
-          >
-            {participants.map((p) => (
-              <ParticipantTile key={p.identity} participant={p} />
-            ))}
-          </div>
+        <div
+          className={`grid flex-1 gap-3 ${
+            totalTiles === 1
+              ? 'grid-cols-1'
+              : totalTiles <= 4
+                ? 'grid-cols-2'
+                : 'grid-cols-3'
+          }`}
+          style={{
+            gridAutoRows: totalTiles <= 2 ? '1fr' : 'minmax(0, 1fr)',
+          }}
+        >
+          {participants.filter((p) => p.isScreenSharing).map((p) => (
+            <ScreenShareTile
+              key={`${p.identity}-screen`}
+              participant={p}
+              onWatch={() => setIsWatchingScreen(true)}
+            />
+          ))}
+          {participants.map((p) => (
+            <ParticipantTile key={p.identity} participant={p} />
+          ))}
         </div>
       )}
 
@@ -288,19 +351,34 @@ const VoiceChannelView = ({ channel }) => {
           </Tooltip>
         </div>
 
-        {/* Group 3: End Call */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              onClick={() => VoiceService.leaveVoiceChannel()}
-              className="flex size-14 items-center justify-center rounded-2xl bg-red-500 text-white shadow-2xl transition-colors hover:bg-red-600"
-            >
-              <PhoneDisconnect className="size-5" weight="fill" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top">Leave Voice</TooltipContent>
-        </Tooltip>
+        {/* Group 3: Stop Watching / Leave Voice */}
+        {isWatchingScreen && !isScreenSharing ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => setIsWatchingScreen(false)}
+                className="flex size-14 items-center justify-center rounded-2xl bg-red-500 text-white shadow-2xl transition-colors hover:bg-red-600"
+              >
+                <ArrowLeft className="size-5" weight="bold" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">Stop Watching</TooltipContent>
+          </Tooltip>
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => VoiceService.leaveVoiceChannel()}
+                className="flex size-14 items-center justify-center rounded-2xl bg-red-500 text-white shadow-2xl transition-colors hover:bg-red-600"
+              >
+                <PhoneDisconnect className="size-5" weight="fill" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">Leave Voice</TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </div>
   );
