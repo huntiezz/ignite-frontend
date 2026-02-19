@@ -3,12 +3,12 @@ import type { GatewayHandlerContext } from './types';
 
 export function handleVoiceStateJoined(data: any, context: GatewayHandlerContext): void {
   if (data.voice_state.user_id === context.currentUserId) return;
-  useChannelsStore.getState().updateChannelVoiceState(data.channel_id, data);
+  useChannelsStore.getState().updateChannelVoiceState(data.channel_id, data.voice_state);
 }
 
 export function handleVoiceStateUpdate(data: any, context: GatewayHandlerContext): void {
   if (data.voice_state.user_id === context.currentUserId) return;
-  useChannelsStore.getState().updateChannelVoiceState(data.channel_id, data, false);
+  useChannelsStore.getState().updateChannelVoiceState(data.channel_id, data.voice_state, false);
 }
 
 export function handleVoiceStateLeft(data: any, context: GatewayHandlerContext): void {

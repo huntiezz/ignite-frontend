@@ -449,6 +449,7 @@ const GuildSidebarCategory = ({
                           name: user?.name || user?.username || String(vs.user_id),
                           isSpeaking: false,
                           isMuted: vs.self_mute,
+                          isDeafened: vs.self_deaf,
                         };
                       })
                   : []

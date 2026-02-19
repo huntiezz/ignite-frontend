@@ -6,6 +6,7 @@ export interface VoiceParticipant {
   name: string;
   isSpeaking: boolean;
   isMuted: boolean;
+  isDeafened: boolean;
   isCameraOn: boolean;
   isScreenSharing: boolean;
 }

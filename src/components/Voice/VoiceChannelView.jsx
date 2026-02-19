@@ -1,5 +1,6 @@
 import { useEffect, useRef, useMemo, useState } from 'react';
 import { Track } from 'livekit-client';
+import { MicrophoneSlash, SpeakerSlash } from '@phosphor-icons/react';
 import { useVoiceStore } from '@/store/voice.store';
 import { useUsersStore } from '@/store/users.store';
 import useStore from '@/hooks/useStore';
@@ -87,6 +88,8 @@ const VoiceChannelView = ({ channel }) => {
                     {(u.name || '?').charAt(0).toUpperCase()}
                   </div>
                   <span className="text-xs text-gray-300">{u.name}</span>
+                  {u.selfDeaf && <SpeakerSlash className="size-3 text-gray-400" />}
+                  {u.selfMute && !u.selfDeaf && <MicrophoneSlash className="size-3 text-gray-400" />}
                 </div>
               ))}
             </div>

@@ -2,6 +2,7 @@ import { Room, RoomEvent, Track, ConnectionState } from 'livekit-client';
 import { toast } from 'sonner';
 import api from '../api.js';
 import { useVoiceStore, type VoiceParticipant } from '../store/voice.store';
+import { useChannelsStore } from '../store/channels.store';
 import { useUsersStore } from '../store/users.store';
 import useStore from '../hooks/useStore';
 
@@ -15,7 +16,15 @@ function resolveParticipantName(identity: string): string {
 }
 
 function buildParticipantsList(room: Room): VoiceParticipant[] {
-  const { isMuted } = useVoiceStore.getState();
+  const { isMuted, isDeafened, channelId } = useVoiceStore.getState();
+
+  // Look up voice_states from the channel store for remote deaf status
+  const channel = channelId
+    ? useChannelsStore.getState().channels.find(
+        (c: any) => String(c.channel_id || c.id) === String(channelId)
+      )
+    : null;
+  const voiceStates: any[] = channel?.voice_states || [];
 
   const participants: VoiceParticipant[] = [];
 
@@ -26,17 +35,22 @@ function buildParticipantsList(room: Room): VoiceParticipant[] {
       name: resolveParticipantName(local.identity),
       isSpeaking: localSpeakingState,
       isMuted: isMuted,
+      isDeafened: isDeafened,
       isCameraOn: local.isCameraEnabled,
       isScreenSharing: local.isScreenShareEnabled,
     });
   }
 
   room.remoteParticipants.forEach((participant) => {
+    const vs = voiceStates.find(
+      (v: any) => String(v.user_id) === String(participant.identity)
+    );
     participants.push({
       identity: participant.identity,
       name: resolveParticipantName(participant.identity),
       isSpeaking: participant.isSpeaking,
       isMuted: !participant.isMicrophoneEnabled,
+      isDeafened: !!vs?.self_deaf,
       isCameraOn: participant.isCameraEnabled,
       isScreenSharing: participant.isScreenShareEnabled,
     });
@@ -200,6 +214,7 @@ export const VoiceService = {
     stopLocalSpeakingMonitor();
 
     if (room) {
+      room.localParticipant.setScreenShareEnabled(false);
       room.disconnect();
     }
 
@@ -208,7 +223,7 @@ export const VoiceService = {
 
   async toggleMute() {
     const store = useVoiceStore.getState();
-    const { room, isMuted } = store;
+    const { room, isMuted, channelId } = store;
 
     if (!room) return;
 
@@ -223,11 +238,17 @@ export const VoiceService = {
     }
 
     refreshParticipants(room);
+
+    if (channelId) {
+      api.patch(`/channels/${channelId}/voice-state`, {
+        self_mute: newMuted,
+      }).catch(() => {});
+    }
   },
 
   async toggleDeafen() {
     const store = useVoiceStore.getState();
-    const { room, isDeafened } = store;
+    const { room, isDeafened, channelId } = store;
 
     if (!room) return;
 
@@ -252,6 +273,14 @@ export const VoiceService = {
     }
 
     store.setDeafened(newDeafened);
+    refreshParticipants(room);
+
+    if (channelId) {
+      api.patch(`/channels/${channelId}/voice-state`, {
+        self_mute: newDeafened ? true : store.isMuted,
+        self_deaf: newDeafened,
+      }).catch(() => {});
+    }
   },
 
   async toggleCamera() {

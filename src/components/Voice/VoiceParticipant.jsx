@@ -1,4 +1,4 @@
-import { MicrophoneSlash } from '@phosphor-icons/react';
+import { MicrophoneSlash, SpeakerSlash } from '@phosphor-icons/react';
 
 const VoiceParticipant = ({ participant }) => {
   return (
@@ -15,6 +15,7 @@ const VoiceParticipant = ({ participant }) => {
       <span className="flex-1 truncate text-[13px] text-gray-400">{participant.name}</span>
 
       {participant.isMuted && <MicrophoneSlash className="size-3.5 shrink-0 text-gray-500" />}
+      {participant.isDeafened && <SpeakerSlash className="size-3.5 shrink-0 text-gray-500" />}      
     </div>
   );
 };

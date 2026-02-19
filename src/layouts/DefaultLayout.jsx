@@ -1,5 +1,5 @@
 import { GuildContextProvider } from '@/contexts/GuildContext';
-import Sidebar from './Sidebar';
+import Sidebar from '../components/Sidebar';
 
 const DefaultLayout = ({ children }) => {
   return (
