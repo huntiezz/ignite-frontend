@@ -1,17 +1,14 @@
-import { useChannelsStore } from '../store/channels.store';
+import { useVoiceStore } from '../store/voice.store';
 import type { GatewayHandlerContext } from './types';
 
 export function handleVoiceStateJoined(data: any, context: GatewayHandlerContext): void {
-  if (data.voice_state.user_id === context.currentUserId) return;
-  useChannelsStore.getState().updateChannelVoiceState(data.channel_id, data.voice_state);
+  useVoiceStore.getState().upsertVoiceState(data.channel_id, data);
 }
 
 export function handleVoiceStateUpdate(data: any, context: GatewayHandlerContext): void {
-  if (data.voice_state.user_id === context.currentUserId) return;
-  useChannelsStore.getState().updateChannelVoiceState(data.channel_id, data.voice_state, false);
+  useVoiceStore.getState().upsertVoiceState(data.channel_id, data);
 }
 
 export function handleVoiceStateLeft(data: any, context: GatewayHandlerContext): void {
-  if (data.voice_state.user_id === context.currentUserId) return;
-  useChannelsStore.getState().removeUserVoiceState(data.user_id);
+  useVoiceStore.getState().removeVoiceState(data.user_id);
 }

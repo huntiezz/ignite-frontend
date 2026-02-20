@@ -1,66 +1,51 @@
 import { Room, RoomEvent, Track, ConnectionState } from 'livekit-client';
 import { toast } from 'sonner';
 import api from '../api.js';
-import { useVoiceStore, type VoiceParticipant } from '../store/voice.store';
-import { useChannelsStore } from '../store/channels.store';
-import { useUsersStore } from '../store/users.store';
-import useStore from '../hooks/useStore';
+import { useVoiceStore, type VoiceState } from '../store/voice.store';
 
-function resolveParticipantName(identity: string): string {
-  const user = useUsersStore.getState().getUser(identity);
-  if (user) {
-    return user.name || user.username || identity;
-  }
+function buildVoiceStates(room: Room): VoiceState[] {
+  const { isMuted, isDeafened, isCameraOn, isScreenSharing, channelId, guildId, voiceStates } = useVoiceStore.getState();
 
-  return identity;
-}
-
-function buildParticipantsList(room: Room): VoiceParticipant[] {
-  const { isMuted, isDeafened, channelId } = useVoiceStore.getState();
-
-  // Look up voice_states from the channel store for remote deaf status
-  const channel = channelId
-    ? useChannelsStore.getState().channels.find(
-        (c: any) => String(c.channel_id || c.id) === String(channelId)
-      )
-    : null;
-  const voiceStates: any[] = channel?.voice_states || [];
-
-  const participants: VoiceParticipant[] = [];
+  const states: VoiceState[] = [];
 
   const local = room.localParticipant;
   if (local) {
-    participants.push({
-      identity: local.identity,
-      name: resolveParticipantName(local.identity),
-      isSpeaking: localSpeakingState,
-      isMuted: isMuted,
-      isDeafened: isDeafened,
-      isCameraOn: local.isCameraEnabled,
-      isScreenSharing: local.isScreenShareEnabled,
+    states.push({
+      user_id: local.identity,
+      guild_id: guildId || '',
+      channel_id: channelId || '',
+      self_mute: isMuted,
+      self_deaf: isDeafened,
+      self_video: isCameraOn,
+      self_stream: isScreenSharing,
+      speaking: localSpeakingState,
     });
   }
 
   room.remoteParticipants.forEach((participant) => {
-    const vs = voiceStates.find(
-      (v: any) => String(v.user_id) === String(participant.identity)
+    const existing = voiceStates.find(
+      (v) => String(v.user_id) === String(participant.identity)
     );
-    participants.push({
-      identity: participant.identity,
-      name: resolveParticipantName(participant.identity),
-      isSpeaking: participant.isSpeaking,
-      isMuted: !participant.isMicrophoneEnabled,
-      isDeafened: !!vs?.self_deaf,
-      isCameraOn: participant.isCameraEnabled,
-      isScreenSharing: participant.isScreenShareEnabled,
+    states.push({
+      user_id: participant.identity,
+      guild_id: guildId || '',
+      channel_id: channelId || '',
+      self_mute: !participant.isMicrophoneEnabled,
+      self_deaf: existing?.self_deaf ?? false,
+      self_video: participant.isCameraEnabled,
+      self_stream: participant.isScreenShareEnabled,
+      speaking: participant.isSpeaking,
     });
   });
 
-  return participants;
+  return states;
 }
 
-function refreshParticipants(room: Room) {
-  useVoiceStore.getState().setParticipants(buildParticipantsList(room));
+function refreshVoiceStates(room: Room) {
+  const { channelId } = useVoiceStore.getState();
+  if (channelId) {
+    useVoiceStore.getState().setChannelVoiceStates(channelId, buildVoiceStates(room));
+  }
 }
 
 // Local speaking detection via Web Audio API (no server roundtrip)
@@ -90,7 +75,7 @@ function startLocalSpeakingMonitor(room: Room) {
 
     if (nowSpeaking !== localSpeakingState) {
       localSpeakingState = nowSpeaking;
-      refreshParticipants(room);
+      refreshVoiceStates(room);
     }
   }, 50);
 
@@ -110,6 +95,18 @@ function stopLocalSpeakingMonitor() {
 }
 
 export const VoiceService = {
+  seedVoiceStates(channels: any[]) {
+    const allVoiceStates = channels.flatMap((c: any) => c.voice_states || []);
+    if (allVoiceStates.length > 0) {
+      const existing = useVoiceStore.getState().voiceStates;
+      const merged = [...existing, ...allVoiceStates];
+      const deduped = Array.from(
+        new Map(merged.map((vs) => [`${vs.user_id}:${vs.channel_id}`, vs])).values()
+      );
+      useVoiceStore.getState().setVoiceStates(deduped);
+    }
+  },
+
   async joinVoiceChannel(
     channelId: string,
     guildId: string,
@@ -144,28 +141,28 @@ export const VoiceService = {
       });
 
       // Participant events
-      room.on(RoomEvent.ParticipantConnected, () => refreshParticipants(room));
-      room.on(RoomEvent.ParticipantDisconnected, () => refreshParticipants(room));
-      room.on(RoomEvent.ActiveSpeakersChanged, () => refreshParticipants(room));
-      room.on(RoomEvent.TrackMuted, () => refreshParticipants(room));
-      room.on(RoomEvent.TrackUnmuted, () => refreshParticipants(room));
+      room.on(RoomEvent.ParticipantConnected, () => refreshVoiceStates(room));
+      room.on(RoomEvent.ParticipantDisconnected, () => refreshVoiceStates(room));
+      room.on(RoomEvent.ActiveSpeakersChanged, () => refreshVoiceStates(room));
+      room.on(RoomEvent.TrackMuted, () => refreshVoiceStates(room));
+      room.on(RoomEvent.TrackUnmuted, () => refreshVoiceStates(room));
 
       // Track publish/unpublish events (for video & screenshare updates)
-      room.on(RoomEvent.TrackPublished, () => refreshParticipants(room));
-      room.on(RoomEvent.TrackUnpublished, () => refreshParticipants(room));
-      room.on(RoomEvent.TrackSubscribed, () => refreshParticipants(room));
-      room.on(RoomEvent.TrackUnsubscribed, () => refreshParticipants(room));
+      room.on(RoomEvent.TrackPublished, () => refreshVoiceStates(room));
+      room.on(RoomEvent.TrackUnpublished, () => refreshVoiceStates(room));
+      room.on(RoomEvent.TrackSubscribed, () => refreshVoiceStates(room));
+      room.on(RoomEvent.TrackUnsubscribed, () => refreshVoiceStates(room));
       room.on(RoomEvent.LocalTrackPublished, () => {
         const s = useVoiceStore.getState();
         s.setCameraOn(room.localParticipant.isCameraEnabled);
         s.setScreenSharing(room.localParticipant.isScreenShareEnabled);
-        refreshParticipants(room);
+        refreshVoiceStates(room);
       });
       room.on(RoomEvent.LocalTrackUnpublished, () => {
         const s = useVoiceStore.getState();
         s.setCameraOn(room.localParticipant.isCameraEnabled);
         s.setScreenSharing(room.localParticipant.isScreenShareEnabled);
-        refreshParticipants(room);
+        refreshVoiceStates(room);
       });
 
       room.on(RoomEvent.Disconnected, () => {
@@ -185,7 +182,7 @@ export const VoiceService = {
 
       store.setRoom(room);
       store.setConnectionState('connected');
-      store.setParticipants(buildParticipantsList(room));
+      store.setChannelVoiceStates(channelId, buildVoiceStates(room));
 
       // Respect the user's current mute state when joining
       const shouldEnableMic = !useVoiceStore.getState().isMuted;
@@ -198,7 +195,7 @@ export const VoiceService = {
           store.setMuted(true);
         }
       }
-      refreshParticipants(room);
+      refreshVoiceStates(room);
 
     } catch (error) {
       console.error('Failed to join voice channel:', error);
@@ -237,7 +234,7 @@ export const VoiceService = {
       startLocalSpeakingMonitor(room);
     }
 
-    refreshParticipants(room);
+    refreshVoiceStates(room);
 
     if (channelId) {
       api.patch(`/channels/${channelId}/voice-state`, {
@@ -273,7 +270,7 @@ export const VoiceService = {
     }
 
     store.setDeafened(newDeafened);
-    refreshParticipants(room);
+    refreshVoiceStates(room);
 
     if (channelId) {
       api.patch(`/channels/${channelId}/voice-state`, {
@@ -292,7 +289,7 @@ export const VoiceService = {
     try {
       await room.localParticipant.setCameraEnabled(!isCameraOn);
       store.setCameraOn(!isCameraOn);
-      refreshParticipants(room);
+      refreshVoiceStates(room);
     } catch {
       console.warn('Camera access denied.');
       toast.error('Could not access camera.');
@@ -310,7 +307,7 @@ export const VoiceService = {
       try {
         await room.localParticipant.setScreenShareEnabled(false);
         store.setScreenSharing(false);
-        refreshParticipants(room);
+        refreshVoiceStates(room);
       } catch {
         console.warn('Failed to stop screen share.');
       }
@@ -327,7 +324,7 @@ export const VoiceService = {
     try {
       await room.localParticipant.setScreenShareEnabled(true);
       store.setScreenSharing(true);
-      refreshParticipants(room);
+      refreshVoiceStates(room);
     } catch {
       console.warn('Screen share cancelled or denied.');
     }
@@ -374,14 +371,14 @@ export const VoiceService = {
       });
 
       store.setScreenSharing(true);
-      refreshParticipants(room);
+      refreshVoiceStates(room);
 
       // Listen for the track ending (e.g. user stops via OS-level controls)
       videoTrack.onended = () => {
         room.localParticipant.unpublishTrack(videoTrack);
         videoTrack.stop();
         store.setScreenSharing(false);
-        refreshParticipants(room);
+        refreshVoiceStates(room);
       };
     } catch (err) {
       console.error('Failed to start screen share:', err);

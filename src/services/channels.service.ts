@@ -9,6 +9,7 @@ import { NotificationService } from './notification.service';
 import { UnreadsService } from './unreads.service';
 import { useNotificationStore } from '../store/notification.store';
 import { useUsersStore } from '@/store/users.store';
+import { VoiceService } from './voice.service';
 
 export const ChannelsService = {
   /**
@@ -24,8 +25,10 @@ export const ChannelsService = {
       return;
     }
 
-    const mergedChannels = [...channels, ...(guild.channels || [])];
+    const guildChannels = guild.channels || [];
+    const mergedChannels = [...channels, ...guildChannels];
     setChannels(mergedChannels);
+    VoiceService.seedVoiceStates(guildChannels);
   },
 
   /**
@@ -39,9 +42,11 @@ export const ChannelsService = {
 
     try {
       const { data } = await api.get('/@me/channels');
-      const mergedChannels = [...data, ...guilds.flatMap((g) => g.channels || [])];
+      const guildChannels = guilds.flatMap((g) => g.channels || []);
+      const mergedChannels = [...data, ...guildChannels];
 
       setChannels(mergedChannels);
+      VoiceService.seedVoiceStates(guildChannels);
     } catch {
       toast.error('Unable to load channels.');
     }

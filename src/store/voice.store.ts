@@ -1,23 +1,24 @@
 import { create } from 'zustand';
-import type { Room, RemoteParticipant, LocalParticipant } from 'livekit-client';
+import type { Room } from 'livekit-client';
 
-export interface VoiceParticipant {
-  identity: string;
-  name: string;
-  isSpeaking: boolean;
-  isMuted: boolean;
-  isDeafened: boolean;
-  isCameraOn: boolean;
-  isScreenSharing: boolean;
+export interface VoiceState {
+  user_id: string;
+  guild_id: string;
+  channel_id: string;
+  self_mute: boolean;
+  self_deaf: boolean;
+  self_video: boolean;
+  self_stream: boolean;
+  speaking?: boolean;
 }
 
-interface VoiceState {
+interface VoiceStoreState {
   room: Room | null;
   channelId: string | null;
   guildId: string | null;
   guildName: string | null;
   channelName: string | null;
-  participants: VoiceParticipant[];
+  voiceStates: VoiceState[];
   isMuted: boolean;
   isDeafened: boolean;
   isCameraOn: boolean;
@@ -35,7 +36,10 @@ interface VoiceState {
     guildName: string | null,
     channelName: string | null
   ) => void;
-  setParticipants: (participants: VoiceParticipant[]) => void;
+  setVoiceStates: (voiceStates: VoiceState[]) => void;
+  upsertVoiceState: (channelId: string, voiceState: VoiceState) => void;
+  removeVoiceState: (userId: string) => void;
+  setChannelVoiceStates: (channelId: string, voiceStates: VoiceState[]) => void;
   setConnectionState: (state: 'disconnected' | 'connecting' | 'connected') => void;
   setMuted: (muted: boolean) => void;
   setDeafened: (deafened: boolean) => void;
@@ -49,13 +53,13 @@ interface VoiceState {
   reset: () => void;
 }
 
-export const useVoiceStore = create<VoiceState>((set) => ({
+export const useVoiceStore = create<VoiceStoreState>((set) => ({
   room: null,
   channelId: null,
   guildId: null,
   guildName: null,
   channelName: null,
-  participants: [],
+  voiceStates: [],
   isMuted: true,
   isDeafened: false,
   isCameraOn: false,
@@ -69,7 +73,32 @@ export const useVoiceStore = create<VoiceState>((set) => ({
   setRoom: (room) => set({ room }),
   setChannel: (channelId, guildId, guildName, channelName) =>
     set({ channelId, guildId, guildName, channelName }),
-  setParticipants: (participants) => set({ participants }),
+  setVoiceStates: (voiceStates) => set({ voiceStates }),
+  upsertVoiceState: (channelId, voiceState) =>
+    set((state) => {
+      const idx = state.voiceStates.findIndex(
+        (vs) => String(vs.user_id) === String(voiceState.user_id)
+      );
+      if (idx === -1) {
+        return { voiceStates: [...state.voiceStates, voiceState] };
+      }
+      const updated = [...state.voiceStates];
+      updated[idx] = voiceState;
+      return { voiceStates: updated };
+    }),
+  removeVoiceState: (userId) =>
+    set((state) => ({
+      voiceStates: state.voiceStates.filter(
+        (vs) => String(vs.user_id) !== String(userId)
+      ),
+    })),
+  setChannelVoiceStates: (channelId, voiceStates) =>
+    set((state) => ({
+      voiceStates: [
+        ...state.voiceStates.filter((vs) => String(vs.channel_id) !== String(channelId)),
+        ...voiceStates,
+      ],
+    })),
   setConnectionState: (connectionState) => set({ connectionState }),
   setMuted: (isMuted) => set({ isMuted }),
   setDeafened: (isDeafened) => set({ isDeafened }),
@@ -109,7 +138,6 @@ export const useVoiceStore = create<VoiceState>((set) => ({
       guildId: null,
       guildName: null,
       channelName: null,
-      participants: [],
       isMuted: state.isMuted,
       isDeafened: false,
       isCameraOn: false,

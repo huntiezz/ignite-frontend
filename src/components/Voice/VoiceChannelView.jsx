@@ -51,12 +51,12 @@ const ScreenShareView = ({ participantIdentity }) => {
   );
 };
 
-const ScreenShareTile = ({ participant, isWatching, onWatch }) => {
+const ScreenShareTile = ({ voiceState, isWatching, onWatch }) => {
   const videoRef = useRef(null);
   const room = useVoiceStore((s) => s.room);
   const [trackInfo, setTrackInfo] = useState(null);
 
-  const isLocal = room?.localParticipant?.identity === participant.identity;
+  const isLocal = room?.localParticipant?.identity === voiceState.user_id;
 
   useEffect(() => {
     if (!room || !videoRef.current) return;
@@ -67,7 +67,7 @@ const ScreenShareTile = ({ participant, isWatching, onWatch }) => {
 
     const lkParticipant = isLocal
       ? room.localParticipant
-      : room.remoteParticipants.get(participant.identity);
+      : room.remoteParticipants.get(voiceState.user_id);
 
     if (!lkParticipant) return;
 
@@ -96,7 +96,14 @@ const ScreenShareTile = ({ participant, isWatching, onWatch }) => {
       screenPub.track?.detach(videoEl);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [isLocal, isWatching, room, participant.identity]);
+  }, [isLocal, isWatching, room, voiceState.user_id]);
+
+  const currentUser = useStore((s) => s.user);
+  const user =
+    String(voiceState.user_id) === String(currentUser?.id)
+      ? currentUser
+      : useUsersStore.getState().getUser(String(voiceState.user_id));
+  const name = user?.name || user?.username || String(voiceState.user_id);
 
   const resLabel = trackInfo ? `${trackInfo.height}P ${trackInfo.fps}FPS` : null;
 
@@ -143,7 +150,7 @@ const ScreenShareTile = ({ participant, isWatching, onWatch }) => {
       <div className="absolute inset-x-0 bottom-0 flex items-center bg-gradient-to-t from-black/60 to-transparent p-4">
         <span className="inline-flex h-8 items-center gap-2 truncate rounded-sm bg-black/50 px-3 py-1.5 text-sm font-medium text-white">
           <Monitor className="size-4 text-green-400" weight="fill" />
-          {participant.name}
+          {name}
         </span>
       </div>
     </div>
@@ -151,41 +158,30 @@ const ScreenShareTile = ({ participant, isWatching, onWatch }) => {
 };
 
 const VoiceChannelView = ({ channel }) => {
-  const { participants, connectionState, isMuted, isCameraOn, isScreenSharing } = useVoiceStore();
+  const { voiceStates: allVoiceStates, connectionState, isMuted, isCameraOn, isScreenSharing } = useVoiceStore();
   const currentUser = useStore((s) => s.user);
   const usersStore = useUsersStore();
 
-  const voiceStateUsers = useMemo(() => {
-    const voiceStates = channel?.voice_states || [];
-    return voiceStates.map((vs) => {
-      const user =
-        String(vs.user_id) === String(currentUser?.id)
-          ? currentUser
-          : usersStore.getUser(String(vs.user_id));
-      return {
-        userId: String(vs.user_id),
-        name: user?.name || user?.username || String(vs.user_id),
-        avatar: user?.avatar,
-        selfMute: vs.self_mute,
-        selfDeaf: vs.self_deaf,
-      };
-    });
-  }, [channel?.voice_states, currentUser, usersStore]);
+  const channelId = channel?.channel_id;
+  const channelVoiceStates = useMemo(
+    () => allVoiceStates.filter((vs) => String(vs.channel_id) === String(channelId)),
+    [allVoiceStates, channelId]
+  );
 
   const watchingScreens = useVoiceStore((s) => s.watchingScreens);
   const addWatchingScreen = useVoiceStore((s) => s.addWatchingScreen);
   const removeWatchingScreen = useVoiceStore((s) => s.removeWatchingScreen);
-  const screenSharers = useMemo(() => participants.filter((p) => p.isScreenSharing), [participants]);
+  const screenSharers = useMemo(() => channelVoiceStates.filter((vs) => vs.self_stream), [channelVoiceStates]);
   const [focusedScreen, setFocusedScreen] = useState(null);
 
   const focusedSharer = useMemo(
-    () => (focusedScreen ? screenSharers.find((p) => p.identity === focusedScreen) : null),
+    () => (focusedScreen ? screenSharers.find((vs) => vs.user_id === focusedScreen) : null),
     [focusedScreen, screenSharers]
   );
 
   // Clear focused screen if that participant stops sharing
   useEffect(() => {
-    if (focusedScreen && !screenSharers.some((p) => p.identity === focusedScreen)) {
+    if (focusedScreen && !screenSharers.some((vs) => vs.user_id === focusedScreen)) {
       setFocusedScreen(null);
     }
   }, [focusedScreen, screenSharers]);
@@ -197,38 +193,45 @@ const VoiceChannelView = ({ channel }) => {
     setFocusedScreen(null);
   };
 
-  const totalTiles = participants.length + screenSharers.length;
+  const totalTiles = channelVoiceStates.length + screenSharers.length;
 
   // Not connected — show a join prompt with current voice state users
   if (connectionState === 'disconnected') {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-black">
         <h2 className="text-xl font-semibold text-gray-100">{channel?.name}</h2>
-        {voiceStateUsers.length > 0 ? (
+        {channelVoiceStates.length > 0 ? (
           <div className="flex flex-col items-center gap-3">
             <p className="text-sm text-gray-400">
-              {voiceStateUsers.length} {voiceStateUsers.length === 1 ? 'person' : 'people'} in this
+              {channelVoiceStates.length} {channelVoiceStates.length === 1 ? 'person' : 'people'} in this
               channel
             </p>
             <div className="flex flex-wrap justify-center gap-2">
-              {voiceStateUsers.map((u) => (
-                <div
-                  key={u.userId}
-                  className="flex items-center gap-1.5 rounded-full bg-gray-600 px-3 py-1.5"
-                >
-                  <div className="flex size-5 items-center justify-center rounded-full">
-                    <Avatar
-                      user={{ avatar_url: u.avatar_url, name: u.name }}
-                      className="size-5 bg-gray-500 text-[10px] font-semibold text-gray-200"
-                    />
+              {channelVoiceStates.map((vs) => {
+                const user =
+                  String(vs.user_id) === String(currentUser?.id)
+                    ? currentUser
+                    : usersStore.getUser(String(vs.user_id));
+                const name = user?.name || user?.username || String(vs.user_id);
+                return (
+                  <div
+                    key={vs.user_id}
+                    className="flex items-center gap-1.5 rounded-full bg-gray-600 px-3 py-1.5"
+                  >
+                    <div className="flex size-5 items-center justify-center rounded-full">
+                      <Avatar
+                        user={user || { name }}
+                        className="size-5 bg-gray-500 text-[10px] font-semibold text-gray-200"
+                      />
+                    </div>
+                    <span className="text-xs text-gray-300">{name}</span>
+                    {vs.self_deaf && <SpeakerSlash className="size-3 text-gray-400" />}
+                    {vs.self_mute && !vs.self_deaf && (
+                      <MicrophoneSlash className="size-3 text-gray-400" />
+                    )}
                   </div>
-                  <span className="text-xs text-gray-300">{u.name}</span>
-                  {u.selfDeaf && <SpeakerSlash className="size-3 text-gray-400" />}
-                  {u.selfMute && !u.selfDeaf && (
-                    <MicrophoneSlash className="size-3 text-gray-400" />
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ) : (
@@ -268,7 +271,7 @@ const VoiceChannelView = ({ channel }) => {
             className="group/stream relative flex flex-1 cursor-pointer"
             onClick={() => setFocusedScreen(null)}
           >
-            <ScreenShareView participantIdentity={focusedSharer.identity} />
+            <ScreenShareView participantIdentity={focusedSharer.user_id} />
             <div className="pointer-events-none absolute inset-0 flex items-end justify-center rounded-xl pb-4 opacity-0 transition-opacity duration-150 group-hover/stream:opacity-100">
               <span className="rounded-lg bg-black/60 px-3 py-1.5 text-sm text-white backdrop-blur-sm">
                 Click to go back
@@ -276,9 +279,9 @@ const VoiceChannelView = ({ channel }) => {
             </div>
           </div>
           <div className="flex w-60 shrink-0 flex-col gap-2 overflow-y-auto">
-            {participants.map((p) => (
-              <div key={p.identity} className="aspect-video">
-                <ParticipantTile participant={p} />
+            {channelVoiceStates.map((vs) => (
+              <div key={vs.user_id} className="aspect-video">
+                <ParticipantTile voiceState={vs} />
               </div>
             ))}
           </div>
@@ -292,22 +295,22 @@ const VoiceChannelView = ({ channel }) => {
             gridAutoRows: totalTiles <= 2 ? '1fr' : 'minmax(0, 1fr)',
           }}
         >
-          {screenSharers.map((p) => (
+          {screenSharers.map((vs) => (
             <ScreenShareTile
-              key={`${p.identity}-screen`}
-              participant={p}
-              isWatching={watchingScreens.includes(p.identity)}
+              key={`${vs.user_id}-screen`}
+              voiceState={vs}
+              isWatching={watchingScreens.includes(vs.user_id)}
               onWatch={() => {
-                if (watchingScreens.includes(p.identity)) {
-                  setFocusedScreen(p.identity);
+                if (watchingScreens.includes(vs.user_id)) {
+                  setFocusedScreen(vs.user_id);
                 } else {
-                  addWatchingScreen(p.identity);
+                  addWatchingScreen(vs.user_id);
                 }
               }}
             />
           ))}
-          {participants.map((p) => (
-            <ParticipantTile key={p.identity} participant={p} />
+          {channelVoiceStates.map((vs) => (
+            <ParticipantTile key={vs.user_id} voiceState={vs} />
           ))}
         </div>
       )}

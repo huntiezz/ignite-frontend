@@ -39,8 +39,6 @@ import { useChannelsStore } from '@/store/channels.store';
 import { useVoiceStore } from '@/store/voice.store';
 import { VoiceService } from '@/services/voice.service';
 import { ChannelType } from '@/constants/ChannelType';
-import { useUsersStore } from '@/store/users.store';
-import useStore from '@/hooks/useStore';
 import VoiceControls from '@/components/Voice/VoiceControls';
 import VoiceParticipant from '@/components/Voice/VoiceParticipant';
 import UserBar from '@/components/UserBar';
@@ -189,8 +187,8 @@ const SortableChannel = ({
               {/* Voice participants */}
               {voiceParticipants?.length > 0 && (
                 <div className="pb-1">
-                  {voiceParticipants.map((p) => (
-                    <VoiceParticipant key={p.identity} participant={p} />
+                  {voiceParticipants.map((vs) => (
+                    <VoiceParticipant key={vs.user_id} voiceState={vs} />
                   ))}
                 </div>
               )}
@@ -269,9 +267,7 @@ const GuildSidebarCategory = ({
   const navigate = useNavigate();
   const sectionName = category?.name;
   const { channelUnreads, channelUnreadsLoaded } = useUnreadsStore();
-  const { channelId: voiceChannelId, participants: voiceParticipants } = useVoiceStore();
-  const currentUser = useStore((s) => s.user);
-  const usersStore = useUsersStore();
+  const { channelId: voiceChannelId, voiceStates } = useVoiceStore();
 
   const { setNodeRef } = useDroppable({
     id: category?.channel_id,
@@ -437,21 +433,7 @@ const GuildSidebarCategory = ({
               guild={guild}
               voiceParticipants={
                 channel.type === ChannelType.GUILD_VOICE
-                  ? voiceChannelId === String(channel.channel_id)
-                    ? voiceParticipants
-                    : (channel.voice_states || []).map((vs) => {
-                        const user =
-                          String(vs.user_id) === String(currentUser?.id)
-                            ? currentUser
-                            : usersStore.getUser(String(vs.user_id));
-                        return {
-                          identity: String(vs.user_id),
-                          name: user?.name || user?.username || String(vs.user_id),
-                          isSpeaking: false,
-                          isMuted: vs.self_mute,
-                          isDeafened: vs.self_deaf,
-                        };
-                      })
+                  ? voiceStates.filter((vs) => String(vs.channel_id) === String(channel.channel_id))
                   : []
               }
             />
