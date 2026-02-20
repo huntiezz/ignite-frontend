@@ -23,6 +23,7 @@ interface VoiceState {
   isCameraOn: boolean;
   isScreenSharing: boolean;
   isScreenSharePickerOpen: boolean;
+  watchingScreens: string[];
   connectionState: 'disconnected' | 'connecting' | 'connected';
   audioInputDeviceId: string | null;
   audioOutputDeviceId: string | null;
@@ -41,6 +42,8 @@ interface VoiceState {
   setCameraOn: (on: boolean) => void;
   setScreenSharing: (on: boolean) => void;
   setScreenSharePickerOpen: (open: boolean) => void;
+  addWatchingScreen: (identity: string) => void;
+  removeWatchingScreen: (identity: string) => void;
   setAudioInputDeviceId: (id: string | null) => void;
   setAudioOutputDeviceId: (id: string | null) => void;
   reset: () => void;
@@ -58,6 +61,7 @@ export const useVoiceStore = create<VoiceState>((set) => ({
   isCameraOn: false,
   isScreenSharing: false,
   isScreenSharePickerOpen: false,
+  watchingScreens: [],
   connectionState: 'disconnected',
   audioInputDeviceId: localStorage.getItem('audioInputDeviceId') || null,
   audioOutputDeviceId: localStorage.getItem('audioOutputDeviceId') || null,
@@ -72,6 +76,16 @@ export const useVoiceStore = create<VoiceState>((set) => ({
   setCameraOn: (isCameraOn) => set({ isCameraOn }),
   setScreenSharing: (isScreenSharing) => set({ isScreenSharing }),
   setScreenSharePickerOpen: (isScreenSharePickerOpen) => set({ isScreenSharePickerOpen }),
+  addWatchingScreen: (identity) =>
+    set((state) => ({
+      watchingScreens: state.watchingScreens.includes(identity)
+        ? state.watchingScreens
+        : [...state.watchingScreens, identity],
+    })),
+  removeWatchingScreen: (identity) =>
+    set((state) => ({
+      watchingScreens: state.watchingScreens.filter((id) => id !== identity),
+    })),
   setAudioInputDeviceId: (audioInputDeviceId) => {
     if (audioInputDeviceId) {
       localStorage.setItem('audioInputDeviceId', audioInputDeviceId);
@@ -101,6 +115,7 @@ export const useVoiceStore = create<VoiceState>((set) => ({
       isCameraOn: false,
       isScreenSharing: false,
       isScreenSharePickerOpen: false,
+      watchingScreens: [],
       connectionState: 'disconnected',
     })),
 }));

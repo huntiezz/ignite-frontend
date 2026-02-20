@@ -51,7 +51,7 @@ const ScreenShareView = ({ participantIdentity }) => {
   );
 };
 
-const ScreenShareTile = ({ participant, onWatch }) => {
+const ScreenShareTile = ({ participant, isWatching, onWatch }) => {
   const videoRef = useRef(null);
   const room = useVoiceStore((s) => s.room);
   const [trackInfo, setTrackInfo] = useState(null);
@@ -59,9 +59,19 @@ const ScreenShareTile = ({ participant, onWatch }) => {
   const isLocal = room?.localParticipant?.identity === participant.identity;
 
   useEffect(() => {
-    if (!isLocal || !room || !videoRef.current) return;
+    if (!room || !videoRef.current) return;
 
-    const screenPub = room.localParticipant.getTrackPublication(Track.Source.ScreenShare);
+    // Show preview when it's our own stream OR when we're watching a remote stream
+    const shouldAttach = isLocal || isWatching;
+    if (!shouldAttach) return;
+
+    const lkParticipant = isLocal
+      ? room.localParticipant
+      : room.remoteParticipants.get(participant.identity);
+
+    if (!lkParticipant) return;
+
+    const screenPub = lkParticipant.getTrackPublication(Track.Source.ScreenShare);
     if (!screenPub?.track) return;
 
     const videoEl = videoRef.current;
@@ -77,7 +87,7 @@ const ScreenShareTile = ({ participant, onWatch }) => {
       if (document.hidden) {
         videoRef.current.pause();
       } else {
-        videoRef.current.play().catch(() => {});
+        videoRef.current.play().catch(() => { });
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
@@ -86,7 +96,7 @@ const ScreenShareTile = ({ participant, onWatch }) => {
       screenPub.track?.detach(videoEl);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [isLocal, room]);
+  }, [isLocal, isWatching, room, participant.identity]);
 
   const resLabel = trackInfo ? `${trackInfo.height}P ${trackInfo.fps}FPS` : null;
 
@@ -98,23 +108,25 @@ const ScreenShareTile = ({ participant, onWatch }) => {
       onKeyDown={(e) => e.key === 'Enter' && onWatch()}
       className="group/tile relative flex cursor-pointer items-center justify-center overflow-hidden rounded-xl bg-[#1e1f22]"
     >
-      {isLocal && (
+      {(isLocal || isWatching) && (
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          className="absolute inset-0 size-full object-cover"
+          className="absolute inset-0 size-full object-contain"
         />
       )}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#101113] to-transparent" />
 
       {/* Hover overlay */}
-      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-150 group-hover/tile:opacity-100">
-        <span className="rounded-lg bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm">
-          Watch Stream
-        </span>
-      </div>
+      {!isWatching && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-150 group-hover/tile:opacity-100">
+          <span className="rounded-lg bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm">
+            {isWatching ? 'View Stream' : 'Watch Stream'}
+          </span>
+        </div>
+      )}
 
       {/* Top-right badges */}
       <div className="absolute right-3 top-3 flex items-center gap-1.5">
@@ -160,9 +172,32 @@ const VoiceChannelView = ({ channel }) => {
     });
   }, [channel?.voice_states, currentUser, usersStore]);
 
-  const screenSharer = useMemo(() => participants.find((p) => p.isScreenSharing), [participants]);
-  const [isWatchingScreen, setIsWatchingScreen] = useState(false);
-  const totalTiles = participants.length + (screenSharer ? 1 : 0);
+  const watchingScreens = useVoiceStore((s) => s.watchingScreens);
+  const addWatchingScreen = useVoiceStore((s) => s.addWatchingScreen);
+  const removeWatchingScreen = useVoiceStore((s) => s.removeWatchingScreen);
+  const screenSharers = useMemo(() => participants.filter((p) => p.isScreenSharing), [participants]);
+  const [focusedScreen, setFocusedScreen] = useState(null);
+
+  const focusedSharer = useMemo(
+    () => (focusedScreen ? screenSharers.find((p) => p.identity === focusedScreen) : null),
+    [focusedScreen, screenSharers]
+  );
+
+  // Clear focused screen if that participant stops sharing
+  useEffect(() => {
+    if (focusedScreen && !screenSharers.some((p) => p.identity === focusedScreen)) {
+      setFocusedScreen(null);
+    }
+  }, [focusedScreen, screenSharers]);
+
+  const stopWatching = () => {
+    if (focusedScreen) {
+      removeWatchingScreen(focusedScreen);
+    }
+    setFocusedScreen(null);
+  };
+
+  const totalTiles = participants.length + screenSharers.length;
 
   // Not connected — show a join prompt with current voice state users
   if (connectionState === 'disconnected') {
@@ -229,14 +264,14 @@ const VoiceChannelView = ({ channel }) => {
   // Connected — show participants
   return (
     <div className="group relative flex flex-1 flex-col overflow-hidden bg-black px-4 pb-24 pt-14">
-      {screenSharer && isWatchingScreen ? (
+      {focusedSharer ? (
         // Screenshare layout: main screenshare + participant strip
         <div className="flex flex-1 gap-3 overflow-hidden">
           <div
             className="group/stream relative flex flex-1 cursor-pointer"
-            onClick={() => setIsWatchingScreen(false)}
+            onClick={() => setFocusedScreen(null)}
           >
-            <ScreenShareView participantIdentity={screenSharer.identity} />
+            <ScreenShareView participantIdentity={focusedSharer.identity} />
             <div className="pointer-events-none absolute inset-0 flex items-end justify-center rounded-xl pb-4 opacity-0 transition-opacity duration-150 group-hover/stream:opacity-100">
               <span className="rounded-lg bg-black/60 px-3 py-1.5 text-sm text-white backdrop-blur-sm">
                 Click to go back
@@ -254,22 +289,26 @@ const VoiceChannelView = ({ channel }) => {
       ) : (
         // Grid layout
         <div
-          className={`grid flex-1 gap-3 ${
-            totalTiles === 1 ? 'grid-cols-1' : totalTiles <= 4 ? 'grid-cols-2' : 'grid-cols-3'
-          }`}
+          className={`grid flex-1 gap-3 ${totalTiles === 1 ? 'grid-cols-1' : totalTiles <= 4 ? 'grid-cols-2' : 'grid-cols-3'
+            }`}
           style={{
             gridAutoRows: totalTiles <= 2 ? '1fr' : 'minmax(0, 1fr)',
           }}
         >
-          {participants
-            .filter((p) => p.isScreenSharing)
-            .map((p) => (
-              <ScreenShareTile
-                key={`${p.identity}-screen`}
-                participant={p}
-                onWatch={() => setIsWatchingScreen(true)}
-              />
-            ))}
+          {screenSharers.map((p) => (
+            <ScreenShareTile
+              key={`${p.identity}-screen`}
+              participant={p}
+              isWatching={watchingScreens.includes(p.identity)}
+              onWatch={() => {
+                if (watchingScreens.includes(p.identity)) {
+                  setFocusedScreen(p.identity);
+                } else {
+                  addWatchingScreen(p.identity);
+                }
+              }}
+            />
+          ))}
           {participants.map((p) => (
             <ParticipantTile key={p.identity} participant={p} />
           ))}
@@ -293,11 +332,10 @@ const VoiceChannelView = ({ channel }) => {
               <button
                 type="button"
                 onClick={() => VoiceService.toggleMute()}
-                className={`flex size-10 items-center justify-center rounded-xl transition-colors ${
-                  isMuted
+                className={`flex size-10 items-center justify-center rounded-xl transition-colors ${isMuted
                     ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
                     : 'text-gray-300 hover:bg-white/10'
-                }`}
+                  }`}
               >
                 {isMuted ? (
                   <MicrophoneSlash className="size-5" weight="fill" />
@@ -313,11 +351,10 @@ const VoiceChannelView = ({ channel }) => {
               <button
                 type="button"
                 onClick={() => VoiceService.toggleCamera()}
-                className={`flex size-10 items-center justify-center rounded-xl transition-colors ${
-                  isCameraOn
+                className={`flex size-10 items-center justify-center rounded-xl transition-colors ${isCameraOn
                     ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
                     : 'text-gray-300 hover:bg-white/10'
-                }`}
+                  }`}
               >
                 {isCameraOn ? (
                   <VideoCamera className="size-5" weight="fill" />
@@ -339,11 +376,10 @@ const VoiceChannelView = ({ channel }) => {
               <button
                 type="button"
                 onClick={() => VoiceService.toggleScreenShare()}
-                className={`flex size-10 items-center justify-center rounded-xl transition-colors ${
-                  isScreenSharing
+                className={`flex size-10 items-center justify-center rounded-xl transition-colors ${isScreenSharing
                     ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
                     : 'text-gray-300 hover:bg-white/10'
-                }`}
+                  }`}
               >
                 <Monitor className="size-5" weight="fill" />
               </button>
@@ -366,12 +402,12 @@ const VoiceChannelView = ({ channel }) => {
         </div>
 
         {/* Group 3: Stop Watching / Leave Voice */}
-        {isWatchingScreen && !isScreenSharing ? (
+        {focusedScreen && !isScreenSharing ? (
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
-                onClick={() => setIsWatchingScreen(false)}
+                onClick={stopWatching}
                 className="flex size-14 items-center justify-center rounded-2xl bg-red-500 text-white shadow-2xl transition-colors hover:bg-red-600"
               >
                 <ArrowLeft className="size-5" weight="bold" />
