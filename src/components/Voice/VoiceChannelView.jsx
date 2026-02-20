@@ -202,10 +202,7 @@ const VoiceChannelView = ({ channel }) => {
   // Not connected — show a join prompt with current voice state users
   if (connectionState === 'disconnected') {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-gray-700">
-        <div className="flex size-24 items-center justify-center rounded-full bg-gray-600">
-          <span className="text-4xl text-gray-400">🔊</span>
-        </div>
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-black">
         <h2 className="text-xl font-semibold text-gray-100">{channel?.name}</h2>
         {voiceStateUsers.length > 0 ? (
           <div className="flex flex-col items-center gap-3">
@@ -242,7 +239,7 @@ const VoiceChannelView = ({ channel }) => {
           onClick={() =>
             VoiceService.joinVoiceChannel(channel.channel_id, channel.guild_id, '', channel.name)
           }
-          className="rounded-md bg-green-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
+          className="rounded-md bg-white px-6 py-2 text-sm font-medium text-black transition-colors hover:bg-gray-200"
         >
           Join Voice
         </button>
@@ -252,7 +249,7 @@ const VoiceChannelView = ({ channel }) => {
 
   if (connectionState === 'connecting') {
     return (
-      <div className="flex flex-1 items-center justify-center bg-gray-700">
+      <div className="flex flex-1 items-center justify-center bg-black">
         <div className="flex flex-col items-center gap-3">
           <div className="size-10 animate-spin rounded-full border-4 border-solid border-green-500 border-t-transparent"></div>
           <p className="text-sm text-gray-400">Connecting to voice...</p>
