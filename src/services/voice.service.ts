@@ -2,6 +2,7 @@ import { Room, RoomEvent, Track, ConnectionState } from 'livekit-client';
 import { toast } from 'sonner';
 import api from '../api.js';
 import { useVoiceStore, type VoiceState } from '../store/voice.store';
+import { SoundService } from './sound.service';
 
 function buildVoiceStates(room: Room): VoiceState[] {
   const { isMuted, isDeafened, isCameraOn, isScreenSharing, channelId, guildId, voiceStates } = useVoiceStore.getState();
@@ -141,8 +142,14 @@ export const VoiceService = {
       });
 
       // Participant events
-      room.on(RoomEvent.ParticipantConnected, () => refreshVoiceStates(room));
-      room.on(RoomEvent.ParticipantDisconnected, () => refreshVoiceStates(room));
+      room.on(RoomEvent.ParticipantConnected, () => {
+        refreshVoiceStates(room);
+        SoundService.playSound('user_join_channel');
+      });
+      room.on(RoomEvent.ParticipantDisconnected, () => {
+        refreshVoiceStates(room);
+        SoundService.playSound('user_leave_channel');
+      });
       room.on(RoomEvent.ActiveSpeakersChanged, () => refreshVoiceStates(room));
       room.on(RoomEvent.TrackMuted, () => refreshVoiceStates(room));
       room.on(RoomEvent.TrackUnmuted, () => refreshVoiceStates(room));
@@ -167,6 +174,7 @@ export const VoiceService = {
 
       room.on(RoomEvent.Disconnected, () => {
         stopLocalSpeakingMonitor();
+        SoundService.playSound('voice_disconnected');
         useVoiceStore.getState().reset();
       });
 
@@ -227,6 +235,7 @@ export const VoiceService = {
     const newMuted = !isMuted;
     await room.localParticipant.setMicrophoneEnabled(!newMuted);
     store.setMuted(newMuted);
+    SoundService.playSound(newMuted ? 'voice_mute' : 'voice_unmute');
 
     if (newMuted) {
       stopLocalSpeakingMonitor();
@@ -270,6 +279,7 @@ export const VoiceService = {
     }
 
     store.setDeafened(newDeafened);
+    SoundService.playSound(newDeafened ? 'voice_deafen' : 'voice_undeafen');
     refreshVoiceStates(room);
 
     if (channelId) {
@@ -289,6 +299,7 @@ export const VoiceService = {
     try {
       await room.localParticipant.setCameraEnabled(!isCameraOn);
       store.setCameraOn(!isCameraOn);
+      SoundService.playSound(!isCameraOn ? 'camera_on' : 'camera_off');
       refreshVoiceStates(room);
     } catch {
       console.warn('Camera access denied.');
