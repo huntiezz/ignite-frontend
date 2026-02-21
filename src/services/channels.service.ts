@@ -282,6 +282,9 @@ export const ChannelsService = {
 
     console.log('New message event received on channel', channelId);
 
+    // Clear typing indicator immediately when user sends a message
+    useTypingStore.getState().removeTypingUser(channelId, event.message.author.id);
+
     if (channelPendingMessages[channelId]?.some((m) => m.nonce === event.message.nonce)) {
       setChannelPendingMessages(
         channelId,

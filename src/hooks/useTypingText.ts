@@ -6,7 +6,7 @@ export function useTypingText(channelId: string | undefined) {
   const clearExpired = useTypingStore((s) => s.clearExpired);
 
   useEffect(() => {
-    const interval = setInterval(clearExpired, 1000);
+    const interval = setInterval(clearExpired, 500);
     return () => clearInterval(interval);
   }, [clearExpired]);
 
