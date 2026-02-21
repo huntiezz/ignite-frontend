@@ -8,7 +8,7 @@ const InvitePreviewCard = ({ invite, code }) => {
   const iconUrl = guild.icon_file_id ? `${CDN_BASE}/icons/${guild.icon_file_id}` : null;
 
   return (
-    <div className="mt-2 flex max-w-[420px] items-center gap-4 rounded-lg border border-white/10 bg-[#2b2d31] p-4">
+    <div className="mt-2 flex max-w-[420px] items-center gap-4 rounded-lg border border-white/10 bg-[#2b2d31] p-4 select-none">
       {iconUrl ? (
         <img
           src={iconUrl}

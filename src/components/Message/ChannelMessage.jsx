@@ -10,7 +10,7 @@ import Avatar from '../Avatar.jsx';
 import GuildMemberContextMenu from '../GuildMember/GuildMemberContextMenu';
 import GuildMemberPopoverContent from '../GuildMember/GuildMemberPopoverContent';
 import UserProfileModal from '../UserProfileModal';
-import MessageContent from '../MessageContent/MessageContent.jsx';
+import MessageContent from './MessageContent.jsx';
 import MessageHeader from './MessageHeader';
 import MessageEditor from './MessageEditor';
 import MessageReactions from './MessageReactions';

@@ -26,8 +26,10 @@ interface VoiceStoreState {
   isScreenSharePickerOpen: boolean;
   watchingScreens: string[];
   connectionState: 'disconnected' | 'connecting' | 'connected';
+  ping: number | null;
   audioInputDeviceId: string | null;
   audioOutputDeviceId: string | null;
+  noiseSuppression: boolean;
 
   setRoom: (room: Room | null) => void;
   setChannel: (
@@ -48,8 +50,10 @@ interface VoiceStoreState {
   setScreenSharePickerOpen: (open: boolean) => void;
   addWatchingScreen: (identity: string) => void;
   removeWatchingScreen: (identity: string) => void;
+  setPing: (ping: number | null) => void;
   setAudioInputDeviceId: (id: string | null) => void;
   setAudioOutputDeviceId: (id: string | null) => void;
+  setNoiseSuppression: (enabled: boolean) => void;
   reset: () => void;
 }
 
@@ -67,8 +71,10 @@ export const useVoiceStore = create<VoiceStoreState>((set) => ({
   isScreenSharePickerOpen: false,
   watchingScreens: [],
   connectionState: 'disconnected',
+  ping: null,
   audioInputDeviceId: localStorage.getItem('audioInputDeviceId') || null,
   audioOutputDeviceId: localStorage.getItem('audioOutputDeviceId') || null,
+  noiseSuppression: localStorage.getItem('noiseSuppression') === 'true',
 
   setRoom: (room) => set({ room }),
   setChannel: (channelId, guildId, guildName, channelName) =>
@@ -99,6 +105,7 @@ export const useVoiceStore = create<VoiceStoreState>((set) => ({
         ...voiceStates,
       ],
     })),
+  setPing: (ping) => set({ ping }),
   setConnectionState: (connectionState) => set({ connectionState }),
   setMuted: (isMuted) => set({ isMuted }),
   setDeafened: (isDeafened) => set({ isDeafened }),
@@ -131,6 +138,10 @@ export const useVoiceStore = create<VoiceStoreState>((set) => ({
     }
     set({ audioOutputDeviceId });
   },
+  setNoiseSuppression: (noiseSuppression) => {
+    localStorage.setItem('noiseSuppression', String(noiseSuppression));
+    set({ noiseSuppression });
+  },
   reset: () =>
     set((state) => ({
       room: null,
@@ -145,5 +156,6 @@ export const useVoiceStore = create<VoiceStoreState>((set) => ({
       isScreenSharePickerOpen: false,
       watchingScreens: [],
       connectionState: 'disconnected',
+      ping: null,
     })),
 }));

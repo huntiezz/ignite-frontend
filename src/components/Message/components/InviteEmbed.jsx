@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { InvitesService } from '../../services/invites.service';
-import InvitePreviewCard from '../Invite/InvitePreviewCard';
+import { InvitesService } from '@/services/invites.service';
+import InvitePreviewCard from '@/components/Invite/InvitePreviewCard';
 
 const InviteEmbed = ({ code }) => {
   const [invite, setInvite] = useState(null);

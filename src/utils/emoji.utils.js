@@ -42,7 +42,7 @@ try {
 
 // Create a regex that matches any of the unicode emojis
 // Sort by length descending to match longer sequences (like family emojis) first
-const unicodeEmojiRegex = new RegExp(
+export const unicodeEmojiRegex = new RegExp(
   allUnicodeEmojis
     .sort((a, b) => b.length - a.length)
     .map((e) => e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) // escape for regex

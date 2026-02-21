@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   Gear,
   Microphone,
@@ -6,36 +7,77 @@ import {
   SpeakerSlash,
   PhoneDisconnect,
   WifiHigh,
+  WifiMedium,
+  WifiLow,
+  WifiSlash,
   VideoCamera,
   VideoCameraSlash,
   Monitor,
+  Waveform,
 } from '@phosphor-icons/react';
 import { useAuthStore } from '@/store/auth.store';
 import { Dialog, DialogTrigger } from './ui/dialog';
 import UserSettingsDialogContent from './UserSettingsDialogContent';
+import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 import { LogOut } from 'lucide-react';
 import Avatar from './Avatar';
 import { useVoiceStore } from '@/store/voice.store';
 import { useUsersStore } from '@/store/users.store';
 import { VoiceService } from '@/services/voice.service';
+import VoiceSettingsDialog from './Voice/VoiceSettingsDialog';
+
+function getPingInfo(ping) {
+  if (ping === null || ping == 0) return { Icon: WifiHigh, color: 'text-gray-400', label: 'Measuring...' };
+  if (ping < 100) return { Icon: WifiHigh, color: 'text-green-500', label: `${Math.round(ping)} ms` };
+  if (ping < 200) return { Icon: WifiMedium, color: 'text-yellow-500', label: `${Math.round(ping)} ms` };
+  if (ping < 400) return { Icon: WifiLow, color: 'text-orange-500', label: `${Math.round(ping)} ms` };
+  return { Icon: WifiSlash, color: 'text-red-500', label: `${Math.round(ping)} ms` };
+}
 
 const UserBar = () => {
   const { logout } = useAuthStore();
-  const { channelName, connectionState, isMuted, isDeafened, isCameraOn, isScreenSharing } =
+  const { channelName, connectionState, isMuted, isDeafened, isCameraOn, isScreenSharing, room, ping } =
     useVoiceStore();
   const user = useUsersStore((state) => state.getCurrentUser());
+  const [voiceSettingsOpen, setVoiceSettingsOpen] = useState(false);
 
   const isConnected = connectionState !== 'disconnected';
 
+  // Poll RTT from LiveKit room
+  useEffect(() => {
+    if (!room || connectionState !== 'connected') return;
+
+    const interval = setInterval(() => {
+      const rtt = room.engine?.client?.rtt;
+      if (typeof rtt === 'number') {
+        useVoiceStore.getState().setPing(rtt);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [room, connectionState]);
+
   return (
-    <div className="border-t border-white/5 bg-[#202024]">
+    <div className="bg-[#121214] p-2">
       {/* Voice Channel Panel - Only show when connected */}
       {isConnected && (
-        <div className="border-b border-white/5 bg-[#1a1a1d] px-2 py-2">
+        <div className="mb-2 rounded-lg bg-[#1a1a1d] px-3 py-2.5">
           <div className="mb-2 flex items-center gap-2">
-            <WifiHigh className="size-4 shrink-0 text-green-500" weight="bold" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="shrink-0 cursor-default">
+                  {(() => {
+                    const { Icon, color } = getPingInfo(ping);
+                    return <Icon className={`size-4 ${color}`} weight="bold" />;
+                  })()}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                {ping !== null ? `${Math.round(ping)} ms` : 'Measuring...'}
+              </TooltipContent>
+            </Tooltip>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-green-500">
+              <p className={`truncate text-xs font-semibold ${getPingInfo(ping).color}`}>
                 {connectionState === 'connecting' ? 'Connecting...' : 'Voice Connected'}
               </p>
               <p className="truncate text-[11px] text-gray-400">{channelName}</p>
@@ -78,6 +120,15 @@ const UserBar = () => {
 
             <button
               type="button"
+              onClick={() => setVoiceSettingsOpen(true)}
+              className="flex size-9 shrink-0 items-center justify-center rounded bg-[#2a2a2d] text-gray-300 transition-colors hover:bg-[#35353a] hover:text-gray-100"
+              title="Voice Settings"
+            >
+              <Waveform className="size-5" weight="bold" />
+            </button>
+
+            <button
+              type="button"
               onClick={() => VoiceService.leaveVoiceChannel()}
               className="flex size-9 shrink-0 items-center justify-center rounded bg-[#2a2a2d] text-gray-300 transition-colors hover:bg-red-500/20 hover:text-red-400"
               title="Disconnect"
@@ -85,16 +136,18 @@ const UserBar = () => {
               <PhoneDisconnect className="size-5" weight="fill" />
             </button>
           </div>
+
+          <VoiceSettingsDialog open={voiceSettingsOpen} onOpenChange={setVoiceSettingsOpen} />
         </div>
       )}
 
       {/* User Info Bar */}
-      <div className="flex items-center px-2.5 py-2.5">
+      <div className="flex items-center rounded-lg bg-[#1a1a1d] px-2.5 py-2.5">
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <div className="relative shrink-0">
             <Avatar user={user} className="size-9" />
             {user?.status !== 'offline' && (
-              <div className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[#202024]">
+              <div className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[#1a1a1d]">
                 <div className="size-3 rounded-full bg-green-600"></div>
               </div>
             )}
