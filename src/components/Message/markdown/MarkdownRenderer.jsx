@@ -118,6 +118,7 @@ function renderInlineNode(node, index, isReply) {
             key={key}
             src={`${EMOJI_CDN_PREFIX}${node.kind.id}`}
             alt={node.kind.name}
+            emojiId={node.kind.id}
             isTwemoji={false}
             isReply={isReply}
           />
