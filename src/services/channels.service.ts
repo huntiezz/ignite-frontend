@@ -248,6 +248,16 @@ export const ChannelsService = {
       ).sort((a: any, b: any) => a.id.localeCompare(b.id));
 
       setChannelMessages(channelId, newChannelMessages);
+
+      // Cache message authors in users store
+      const { users, setUsers } = useUsersStore.getState();
+      const newAuthors = data
+        .filter((msg: any) => msg.author && !users[msg.author.id])
+        .map((msg: any) => msg.author);
+      if (newAuthors.length > 0) {
+        setUsers(newAuthors);
+      }
+
       return data;
     } catch {
       toast.error('Unable to load channel messages.');
@@ -294,6 +304,12 @@ export const ChannelsService = {
       !channelMessages[channelId]?.some((m) => m.id === event.message.id)
     ) {
       setChannelMessages(channelId, [...(channelMessages[channelId] || []), event.message]);
+    }
+
+    // Cache message author in users store if not already present
+    const { users, setUser } = useUsersStore.getState();
+    if (event.message.author && !users[event.message.author.id]) {
+      setUser(event.message.author.id, event.message.author);
     }
 
     // If we authored this message or are viewing this channel, mark as read immediately

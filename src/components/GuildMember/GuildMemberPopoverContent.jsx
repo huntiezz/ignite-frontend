@@ -1,34 +1,13 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useStore from '../../hooks/useStore';
-import {
-  UserCheck,
-  UserMinus,
-  UserPlus,
-  UserX,
-  Smile,
-  Clock,
-  PawPrint,
-  Pizza,
-  Trophy,
-  Plane,
-  Lightbulb,
-  Shapes,
-} from 'lucide-react';
+import { MessageSquare, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
 import Avatar from '../Avatar';
 import { FriendsService } from '../../services/friends.service';
 import { ChannelsService } from '../../services/channels.service';
 import { useFriendsStore } from '../../store/friends.store';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { DotsThree, Prohibit, UserCircle } from '@phosphor-icons/react';
-import {
-  EmojiPicker,
-  EmojiPickerContent,
-  EmojiPickerSearch,
-  EmojiPickerSidebar,
-} from '../ui/emoji-picker';
-import emojisData from '../../assets/emojis/emojis.json';
-import { useEmojisStore } from '../../store/emojis.store';
 import { toast } from 'sonner';
 import UserProfileModal from '../UserProfileModal';
 import { useUsersStore } from '@/store/users.store';
@@ -38,21 +17,8 @@ import { useGuildsStore } from '../../store/guilds.store';
 const GuildMemberPopoverContent = ({ userId, onOpenProfile }) => {
   const store = useStore();
   const navigate = useNavigate();
-  const inputRef = useRef(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const [message, setMessage] = useState('');
-  const [emojiSearch, setEmojiSearch] = useState('');
-  const [activeCategory, setActiveCategory] = useState('people');
 
-  const { recentEmojis, addRecentEmoji } = useEmojisStore();
-
-  useEffect(() => {
-    // Focus after a tiny delay to ensure Radix has finished its own focus management
-    const timer = setTimeout(() => {
-      inputRef.current?.focus();
-    }, 50);
-    return () => clearTimeout(timer);
-  }, []);
   const { friends, requests } = useFriendsStore();
   const { getUser } = useUsersStore();
   const { guildId } = useGuildContext();
@@ -138,44 +104,14 @@ const GuildMemberPopoverContent = ({ userId, onOpenProfile }) => {
     }
   };
 
-  const handleSendMessage = async () => {
-    const text = message.trim();
-    if (!text) return;
-
+  const handleOpenDM = async () => {
     try {
       const channel = await ChannelsService.createPrivateChannel([userId]);
       if (channel) {
-        navigate(`/channels/@me/${channel.channel_id}`, { state: { initialMessage: text } });
-        setMessage('');
-        toast.info(`Starting conversation with ${user.username}`);
+        navigate(`/channels/@me/${channel.channel_id}`);
       }
     } catch {
-      toast.error('Failed to start conversation');
-    }
-  };
-
-  const onEmojiSelect = (emoji) => {
-    let emojiChar;
-    if (emoji.url) {
-      emojiChar = emoji.id ? `<${emoji.id}:${emoji.label}>` : `:${emoji.label}:`;
-    } else {
-      emojiChar = emoji.emoji;
-    }
-
-    setMessage((prev) => prev + emojiChar);
-
-    addRecentEmoji({
-      label: emoji.label,
-      surrogates: emoji.emoji,
-      url: emoji.url,
-      isCustom: !!emoji.url,
-    });
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+      toast.error('Failed to open DM');
     }
   };
 
@@ -187,8 +123,6 @@ const GuildMemberPopoverContent = ({ userId, onOpenProfile }) => {
   const handleBlock = () => {
     toast.info('Block feature coming soon!');
   };
-
-  console.log(user);
 
   return (
     <>
@@ -208,7 +142,7 @@ const GuildMemberPopoverContent = ({ userId, onOpenProfile }) => {
             <button
               type="button"
               onClick={() => (onOpenProfile ? onOpenProfile() : setProfileModalOpen(true))}
-              className="group relative rounded-full"
+              className="group relative rounded-full ring-[6px] ring-[#111214]"
             >
               <Avatar user={user} className="size-20 !cursor-pointer text-3xl" />
               {user.status === 'online' && (
@@ -374,104 +308,18 @@ const GuildMemberPopoverContent = ({ userId, onOpenProfile }) => {
               </div>
             )}
 
-            <div className="mt-4">
-              <div className="relative flex items-center">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={message}
-                  onKeyDown={handleKeyDown}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder={`Message @${user.name ?? user.username}`}
-                  className="w-full rounded bg-[#383a40] py-2 pl-3 pr-10 text-[13px] text-gray-100 outline-none placeholder:text-[#949ba4]"
-                />
-                <div className="absolute right-3 flex items-center text-[#b5bac1] hover:text-[#dbdee1]">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Smile size={20} weight="fill" className="cursor-pointer" />
-                    </PopoverTrigger>
-                    <PopoverContent
-                      side="top"
-                      align="end"
-                      sideOffset={12}
-                      className="z-[1100] h-[430px] w-[452px] border-none bg-transparent p-0 shadow-none"
-                    >
-                      <EmojiPicker className="flex size-full flex-row">
-                        <EmojiPickerSidebar
-                          activeCategory={activeCategory}
-                          onCategorySelect={(id) => {
-                            setActiveCategory(id);
-                            const viewport = document.querySelector(
-                              '[data-slot="emoji-picker-viewport"]'
-                            );
-                            if (viewport) {
-                              if (id === 'recent') {
-                                viewport.scrollTo({ top: 0, behavior: 'smooth' });
-                              } else {
-                                const el = document.getElementById(`category-${id}`);
-                                if (el)
-                                  viewport.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
-                              }
-                            }
-                          }}
-                          categories={[
-                            {
-                              id: 'recent',
-                              label: 'Recent',
-                              icon: <Clock className="size-[20px]" />,
-                            },
-                            {
-                              id: 'people',
-                              label: 'People',
-                              icon: <Smile className="size-[20px]" />,
-                            },
-                            {
-                              id: 'nature',
-                              label: 'Nature',
-                              icon: <PawPrint className="size-[20px]" />,
-                            },
-                            { id: 'food', label: 'Food', icon: <Pizza className="size-[20px]" /> },
-                            {
-                              id: 'activity',
-                              label: 'Activities',
-                              icon: <Trophy className="size-[20px]" />,
-                            },
-                            {
-                              id: 'travel',
-                              label: 'Travel',
-                              icon: <Plane className="size-[20px]" />,
-                            },
-                            {
-                              id: 'objects',
-                              label: 'Objects',
-                              icon: <Lightbulb className="size-[20px]" />,
-                            },
-                            {
-                              id: 'symbols',
-                              label: 'Symbols',
-                              icon: <Shapes className="size-[20px]" />,
-                            },
-                          ]}
-                        />
-                        <div className="flex min-w-0 flex-1 flex-col bg-[#2b2d31]">
-                          <EmojiPickerSearch
-                            value={emojiSearch}
-                            onChange={(e) => setEmojiSearch(e.target.value)}
-                          />
-                          <EmojiPickerContent
-                            searchValue={emojiSearch}
-                            standardEmojis={emojisData}
-                            recentEmojis={recentEmojis}
-                            onCategoryVisible={setActiveCategory}
-                            onEmojiSelect={onEmojiSelect}
-                          />
-                        </div>
-                      </EmojiPicker>
-                    </PopoverContent>
-                  </Popover>
-                </div>
+            {user.id !== store.user?.id && (
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={handleOpenDM}
+                  className="flex w-full items-center justify-center gap-2 rounded bg-[#5865f2] px-3 py-2 text-[13px] font-medium text-white transition hover:bg-[#4752c4]"
+                >
+                  <MessageSquare className="size-4" />
+                  Message
+                </button>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

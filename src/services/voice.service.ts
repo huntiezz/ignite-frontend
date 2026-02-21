@@ -2,6 +2,7 @@ import { Room, RoomEvent, Track, ConnectionState } from 'livekit-client';
 import { toast } from 'sonner';
 import api from '../api.js';
 import { useVoiceStore, type VoiceState } from '../store/voice.store';
+import { useUsersStore } from '../store/users.store';
 
 function buildVoiceStates(room: Room): VoiceState[] {
   const { isMuted, isDeafened, isCameraOn, isScreenSharing, channelId, guildId, voiceStates } = useVoiceStore.getState();
@@ -104,6 +105,15 @@ export const VoiceService = {
         new Map(merged.map((vs) => [`${vs.user_id}:${vs.channel_id}`, vs])).values()
       );
       useVoiceStore.getState().setVoiceStates(deduped);
+
+      // Cache voice state users in users store
+      const { users, setUsers } = useUsersStore.getState();
+      const newUsers = allVoiceStates
+        .filter((vs: any) => vs.user && !users[vs.user.id])
+        .map((vs: any) => vs.user);
+      if (newUsers.length > 0) {
+        setUsers(newUsers);
+      }
     }
   },
 

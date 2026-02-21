@@ -1,5 +1,5 @@
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
-import { surrogateToName } from '../../utils/emoji.utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { surrogateToName } from '@/utils/emoji.utils';
 import { cn } from '@/lib/utils';
 
 const Emoji = ({ src, alt, isTwemoji, isReply }) => {

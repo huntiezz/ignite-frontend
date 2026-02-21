@@ -9,7 +9,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '../ui/alert-dialog';
+} from '../../ui/alert-dialog';
 import { toast } from 'sonner';
 
 /**
