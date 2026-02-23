@@ -13,9 +13,9 @@ import { useState } from 'react';
 import SearchModal from '../Modals/SearchModal';
 import { useGuildContext } from '../../contexts/GuildContext';
 import { useChannelContext } from '../../contexts/ChannelContext';
-import useStore from '@/hooks/useStore';
 import { ChannelType } from '@/constants/ChannelType';
 import Avatar from '../Avatar';
+import { useUsersStore } from '@/store/users.store';
 
 const Tooltip = ({ text = 'Hello' }) => {
   return (
@@ -77,11 +77,13 @@ const IconButton = ({ icon, tooltipText, onClick }) => {
 const ChannelBar = ({ channel, onJumpToMessage }) => {
   const { guildId } = useGuildContext();
   const { memberListOpen, setMemberListOpen } = useChannelContext();
-  const currentUser = useStore((s) => s.user);
+  const currentUser = useUsersStore().getCurrentUser();
   const otherRecipient =
     channel?.type === ChannelType.DM
       ? (channel.recipients || []).find((r) => r.id !== currentUser?.id)
       : {};
+
+      console.log(otherRecipient, currentUser?.id);
 
   const [searchOpen, setSearchOpen] = useState(false);
 

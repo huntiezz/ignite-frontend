@@ -17,7 +17,6 @@ import {
   X,
 } from '@phosphor-icons/react';
 import { cn } from '../lib/utils';
-import useStore from '../hooks/useStore';
 import { useFriendsStore } from '../store/friends.store';
 import { useUsersStore } from '../store/users.store';
 import { FriendsService } from '../services/friends.service';
@@ -32,7 +31,7 @@ import { useNavigate } from 'react-router-dom';
 const CDN_BASE = import.meta.env.VITE_CDN_BASE_URL;
 
 const UserProfileModal = ({ userId, open, onOpenChange }) => {
-  const store = useStore();
+  const currentUser = useUsersStore((s) => s.getCurrentUser());
   const user = useUsersStore((state) => state.users[userId]);
   const navigate = useNavigate();
   const { friends, requests } = useFriendsStore();
@@ -50,7 +49,7 @@ const UserProfileModal = ({ userId, open, onOpenChange }) => {
     return (guildsStore.guildMembers[guildId] || []).find((m) => m.user_id === userId);
   }, [guildContext?.guildId, guildsStore.guildMembers, userId]);
 
-  const isOwner = store.user?.id === user?.id;
+  const isOwner = currentUser?.id === user?.id;
 
   useEffect(() => {
     if (!open || !userId || isOwner) return;
@@ -72,16 +71,16 @@ const UserProfileModal = ({ userId, open, onOpenChange }) => {
     () =>
       requests.find(
         (req) =>
-          (req.sender_id === store.user?.id &&
+          (req.sender_id === currentUser?.id &&
             (req.receiver_id === user?.id || req.receiver?.username === user?.username)) ||
-          (req.receiver_id === store.user?.id &&
+          (req.receiver_id === currentUser?.id &&
             (req.sender_id === user?.id || req.sender?.username === user?.username))
       ),
-    [requests, store.user?.id, user?.id, user?.username]
+    [requests, currentUser?.id, user?.id, user?.username]
   );
 
-  const isOutgoing = pendingRequest && pendingRequest.sender_id === store.user?.id;
-  const isIncoming = pendingRequest && pendingRequest.receiver_id === store.user?.id;
+  const isOutgoing = pendingRequest && pendingRequest.sender_id === currentUser?.id;
+  const isIncoming = pendingRequest && pendingRequest.receiver_id === currentUser?.id;
 
 
   if (!user) return null;

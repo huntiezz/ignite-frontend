@@ -2,7 +2,6 @@ import { useCallback, useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
-import useStore from '../hooks/useStore';
 import { AuthService } from '../services/auth.service';
 
 const HCAPTCHA_SITE_KEY = '78b0437e-9a22-4e50-aae6-26ae467445d8';
@@ -20,7 +19,6 @@ import { Button } from '../components/ui/button';
 
 const RegisterPage = () => {
   const form = useForm();
-  const store = useStore();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 

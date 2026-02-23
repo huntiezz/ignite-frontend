@@ -1,6 +1,5 @@
 import { toast } from 'sonner';
 import api from '../api.js';
-import useStore from '../hooks/useStore';
 import { GuildsService } from './guilds.service';
 import { ChannelsService } from './channels.service';
 import { FriendsService } from './friends.service';

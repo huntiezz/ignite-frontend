@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import useStore from '../../hooks/useStore';
+import { useUsersStore } from '../../store/users.store';
 import api from '../../api';
 import { FriendsService } from '../../services/friends.service';
 import { GuildsService } from '../../services/guilds.service';
@@ -132,7 +132,7 @@ export const KickBanDialog = ({ user, confirmAction, setConfirmAction }) => {
 };
 
 const GuildMemberContextMenu = ({ user, onViewProfile, onConfirmAction }) => {
-  const store = useStore();
+  const currentUser = useUsersStore((s) => s.getCurrentUser());
   const navigate = useNavigate();
   const { friends, requests } = useFriendsStore();
   const { guildRoles } = useRolesStore();
@@ -166,8 +166,8 @@ const GuildMemberContextMenu = ({ user, onViewProfile, onConfirmAction }) => {
   const hasManageRoles = useHasPermission(guildId, null, Permissions.MANAGE_ROLES);
   const hasKickPermission = useHasPermission(guildId, null, Permissions.KICK_MEMBERS);
   const hasBanPermission = useHasPermission(guildId, null, Permissions.BAN_MEMBERS);
-  const canKickMember = user.id !== store.user.id && hasKickPermission;
-  const canBanMember = user.id !== store.user.id && hasBanPermission;
+  const canKickMember = user.id !== currentUser.id && hasKickPermission;
+  const canBanMember = user.id !== currentUser.id && hasBanPermission;
 
   const isFriend = useMemo(() => friends.some((f) => f.id === user.id), [friends, user.id]);
   const hasSentRequest = useMemo(
@@ -186,7 +186,7 @@ const GuildMemberContextMenu = ({ user, onViewProfile, onConfirmAction }) => {
 
   const onSendMessage = useCallback(
     async (author) => {
-      if (author.id === store.user.id) {
+      if (author.id === currentUser.id) {
         toast.info('You cannot DM yourself.');
         return;
       }
@@ -198,7 +198,7 @@ const GuildMemberContextMenu = ({ user, onViewProfile, onConfirmAction }) => {
         toast.error(error.response?.data?.message || 'Could not create direct message.');
       }
     },
-    [navigate, store.user.id]
+    [navigate, currentUser.id]
   );
 
   // Handler shortcuts
@@ -218,11 +218,11 @@ const GuildMemberContextMenu = ({ user, onViewProfile, onConfirmAction }) => {
         View Profile
       </ContextMenuItem>
 
-      {user.id !== store.user.id && (
+      {user.id !== currentUser.id && (
         <ContextMenuItem onSelect={() => onSendMessage(user)}>Message</ContextMenuItem>
       )}
 
-      {user.id !== store.user.id && (
+      {user.id !== currentUser.id && (
         <>
           <ContextMenuSeparator />
 

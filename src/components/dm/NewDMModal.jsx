@@ -13,7 +13,6 @@ import { useFriendsStore } from '@/store/friends.store';
 import { useChannelsStore } from '@/store/channels.store';
 import { useGuildsStore } from '@/store/guilds.store';
 import { ChannelsService } from '@/services/channels.service';
-import useStore from '@/hooks/useStore';
 import { ChannelType } from '@/constants/ChannelType';
 
 const CDN_BASE = import.meta.env.VITE_CDN_BASE_URL;
@@ -27,13 +26,13 @@ const PREFIXES = {
 
 const NewDMModal = ({ open, onOpenChange }) => {
   const navigate = useNavigate();
-  const store = useStore();
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const listRef = useRef(null);
 
   const allUsers = useUsersStore((s) => s.users);
+  const currentUser = useUsersStore((s) => s.getCurrentUser());
   const { friends } = useFriendsStore();
   const { channels } = useChannelsStore();
   const { guilds } = useGuildsStore();
@@ -64,7 +63,7 @@ const NewDMModal = ({ open, onOpenChange }) => {
 
   // Recent DM channels sorted by last message
   const recentDms = useMemo(() => {
-    const currentUserId = store.user?.id;
+    const currentUserId = currentUser?.id;
     return channels
       .filter((c) => c.type === ChannelType.DM)
       .map((c) => {
@@ -76,10 +75,10 @@ const NewDMModal = ({ open, onOpenChange }) => {
         if (!b.last_message_id) return -1;
         return BigInt(a.last_message_id) < BigInt(b.last_message_id) ? 1 : -1;
       });
-  }, [channels, store.user?.id]);
+  }, [channels, currentUser?.id]);
 
   const results = useMemo(() => {
-    const currentUserId = store.user?.id;
+    const currentUserId = currentUser?.id;
     const items = [];
 
     // Users (@ prefix or no prefix)
@@ -135,7 +134,7 @@ const NewDMModal = ({ open, onOpenChange }) => {
     }
 
     return items;
-  }, [allUsers, guildChannels, guilds, searchTerm, activeFilter, store.user?.id, friendIds]);
+  }, [allUsers, guildChannels, guilds, searchTerm, activeFilter, currentUser?.id, friendIds]);
 
   // Default view: recent DMs when no query
   const showDefault = !query.trim();

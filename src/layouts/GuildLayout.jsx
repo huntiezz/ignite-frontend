@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import DefaultLayout from './DefaultLayout';
 import ServerSettings from '../components/Settings/ServerSettings';
-import useStore from '../hooks/useStore';
 import EditGuildChannelModal from '../components/Modals/EditGuildChannelModal';
 import { useChannelsStore } from '../store/channels.store';
 import GuildChannelsSidebar from '@/components/Guild/GuildChannelsSidebar';
@@ -12,7 +11,6 @@ import { Permissions } from '@/constants/Permissions';
 import { useHasPermission } from '@/hooks/useHasPermission';
 
 const GuildLayout = ({ children, guild }) => {
-  const store = useStore();
   const [isServerSettingsOpen, setIsServerSettingsOpen] = useState(false);
   const [isEditChannelModalOpen, setIsEditChannelModalOpen] = useState(false);
   const [isCreateChannelDialogOpen, setIsCreateChannelDialogOpen] = useState(false);

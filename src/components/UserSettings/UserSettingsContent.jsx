@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import useStore from '../../hooks/useStore';
+import { useUsersStore } from '../../store/users.store';
 import { DialogContent, DialogTitle } from '../ui/dialog';
 import Avatar from '../Avatar';
 import { Button } from '../ui/button';
@@ -35,7 +35,7 @@ const navigationSections = [
 ];
 
 const UserSettingsContent = () => {
-  const store = useStore();
+  const currentUser = useUsersStore((s) => s.getCurrentUser());
   const { logout } = useAuthStore();
 
   const [tab, setTab] = useState('account');
@@ -84,10 +84,10 @@ const UserSettingsContent = () => {
       >
         {/* User header */}
         <div className="flex items-center gap-3 border-b border-border px-4 py-4">
-          <Avatar user={store.user} className="size-10 text-base" />
+          <Avatar user={currentUser} className="size-10 text-base" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-foreground">{store.user?.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{store.user?.username}</p>
+            <p className="truncate text-sm font-semibold text-foreground">{currentUser?.name}</p>
+            <p className="truncate text-xs text-muted-foreground">{currentUser?.username}</p>
           </div>
           {/* Mobile close */}
           <Button

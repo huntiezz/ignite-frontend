@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { InputGroup, InputGroupInput, InputGroupAddon } from '@/components/ui/input-group';
 import { useFriendsStore } from '@/store/friends.store';
-import useStore from '@/hooks/useStore';
+import { useUsersStore } from '@/store/users.store';
 import AddFriendForm from './AddFriendForm';
 import FriendsList from './FriendsList';
 import PendingRequests from './PendingRequests';
@@ -14,8 +14,7 @@ const FriendsDashboard = () => {
   const [activeTab, setActiveTab] = useState('online');
   const [searchQuery, setSearchQuery] = useState('');
   const { friends, requests } = useFriendsStore();
-  const store = useStore();
-  const currentUser = store.user;
+  const currentUser = useUsersStore((s) => s.getCurrentUser());
 
   const pendingCount = requests.filter((req) => req.sender_id != currentUser.id).length;
 

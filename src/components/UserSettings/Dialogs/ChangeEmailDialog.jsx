@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import api from '../../../api';
-import useStore from '../../../hooks/useStore';
+import { useUsersStore } from '@/store/users.store';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
@@ -18,8 +18,8 @@ import {
 } from '../../ui/alert-dialog';
 
 const ChangeEmailDialog = ({ open, onOpenChange }) => {
-  const store = useStore();
-  const user = store.user;
+  const user = useUsersStore((s) => s.getCurrentUser());
+  const setUser = useUsersStore((s) => s.setUser);
 
   const form = useForm({
     defaultValues: {
@@ -35,7 +35,7 @@ const ChangeEmailDialog = ({ open, onOpenChange }) => {
           email: data.email,
           password: data.currentPassword,
         });
-        store.setUser({ ...store.user, email: data.email });
+        setUser(user.id, { ...user, email: data.email });
         onOpenChange(false);
         form.reset();
         toast.success('Email updated successfully');
@@ -48,7 +48,7 @@ const ChangeEmailDialog = ({ open, onOpenChange }) => {
         }
       }
     },
-    [form, onOpenChange, store]
+    [form, onOpenChange, user, setUser]
   );
 
   return (

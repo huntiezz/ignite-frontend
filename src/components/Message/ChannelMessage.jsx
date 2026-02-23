@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, memo, useRef } from 'react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import api from '../../api';
-import useStore from '../../hooks/useStore';
+import { useUsersStore } from '../../store/users.store';
 import { useChannelsStore } from '../../store/channels.store';
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '../ui/context-menu';
 import { Popover, PopoverContent } from '../ui/popover';
@@ -32,7 +32,7 @@ const ChannelMessage = memo(
     setEditingId,
     guildId,
   }) => {
-    const store = useStore();
+    const currentUser = useUsersStore((s) => s.getCurrentUser());
     const [profileModalOpen, setProfileModalOpen] = useState(false);
     const [popoverOpen, setPopoverOpen] = useState(false);
     const avatarClickedRef = useRef(false);
@@ -55,17 +55,17 @@ const ChannelMessage = memo(
     }, [prevMessage, message, hasReply]);
 
     const canEdit = useMemo(
-      () => message.author.id === store.user.id,
-      [message.author.id, store.user.id]
+      () => message.author.id === currentUser.id,
+      [message.author.id, currentUser.id]
     );
 
     const hasManageMessages = useHasPermission(guildId, message.channel_id, Permissions.MANAGE_MESSAGES);
-    const canDelete = message.author.id === store.user.id || hasManageMessages;
+    const canDelete = message.author.id === currentUser.id || hasManageMessages;
 
     const isMentioned = useMemo(() => {
-      if (!message.mentions || !store.user?.id) return false;
-      return message.mentions.some((mention) => mention.user_id === store.user.id);
-    }, [message.mentions, store.user?.id]);
+      if (!message.mentions || !currentUser?.id) return false;
+      return message.mentions.some((mention) => mention.user_id === currentUser.id);
+    }, [message.mentions, currentUser?.id]);
 
     const isReplyingTo = replyingId === message.id;
 

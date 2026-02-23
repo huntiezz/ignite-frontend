@@ -2,7 +2,6 @@ import { toast } from 'sonner';
 import { useGuildsStore } from '../store/guilds.store';
 import { useUsersStore } from '../store/users.store';
 import api from '../api.js';
-import useStore from '../hooks/useStore';
 import axios from 'axios';
 import { ChannelsService } from './channels.service';
 

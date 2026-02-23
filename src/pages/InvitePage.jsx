@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Users, Clock, XCircle, CheckCircle } from '@phosphor-icons/react';
-import useStore from '../hooks/useStore';
+import { useUsersStore } from '../store/users.store';
 import { useGuildsStore } from '../store/guilds.store';
 import { useInvitesStore } from '../store/invites.store';
 import { InvitesService } from '../services/invites.service';
@@ -15,7 +15,7 @@ import { Field, FieldLabel, FieldError } from '../components/ui/field';
 const InvitePage = () => {
   const { code } = useParams();
   const navigate = useNavigate();
-  const store = useStore();
+  const currentUser = useUsersStore((s) => s.getCurrentUser());
   const { guilds } = useGuildsStore();
 
   const cachedInvite = useInvitesStore((s) => s.invites[code]);
@@ -64,13 +64,13 @@ const InvitePage = () => {
 
   // Check if user is already a member and redirect
   useEffect(() => {
-    if (invite && store.user && guilds.length > 0) {
+    if (invite && currentUser && guilds.length > 0) {
       const guild = guilds.find((g) => g.id === invite.guild.id);
       if (guild) {
         navigate(`/channels/${guild.id}`, { replace: true });
       }
     }
-  }, [invite, guilds, store.user, navigate]);
+  }, [invite, guilds, currentUser, navigate]);
 
   // Handle join for authenticated users
   const handleJoin = useCallback(async () => {
@@ -257,7 +257,7 @@ const InvitePage = () => {
               )}
               {/* Action Buttons */}
               <div className="w-full space-y-3 border-t pt-4">
-                {store.user ? (
+                {currentUser ? (
                   // Logged in user
                   <Button onClick={handleJoin} disabled={joining} className="w-full" size="lg">
                     {joining ? 'Joining...' : 'Join Server'}

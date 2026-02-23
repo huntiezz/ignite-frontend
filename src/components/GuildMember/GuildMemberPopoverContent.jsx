@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useStore from '../../hooks/useStore';
+import { useUsersStore } from '@/store/users.store';
 import { MessageSquare, Plus, UserCheck, UserMinus, UserPlus, UserX, X } from 'lucide-react';
 import Avatar from '../Avatar';
 import { FriendsService } from '../../services/friends.service';
@@ -12,7 +12,6 @@ import { DotsThree, Prohibit, UserCircle, UserCircleMinus, Gavel } from '@phosph
 import { toast } from 'sonner';
 import UserProfileModal from '../UserProfileModal';
 import { KickBanDialog } from './GuildMemberContextMenu';
-import { useUsersStore } from '@/store/users.store';
 import { useGuildContext } from '../../contexts/GuildContext';
 import { useGuildsStore } from '../../store/guilds.store';
 import { useRolesStore } from '@/store/roles.store';
@@ -20,7 +19,7 @@ import { Permissions } from '@/constants/Permissions';
 import { useHasPermission } from '@/hooks/useHasPermission';
 
 const GuildMemberPopoverContent = ({ userId, onOpenProfile }) => {
-  const store = useStore();
+  const currentUser = useUsersStore((s) => s.getCurrentUser());
   const navigate = useNavigate();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null); // 'kick' | 'ban' | null
@@ -129,8 +128,8 @@ const GuildMemberPopoverContent = ({ userId, onOpenProfile }) => {
   const hasKickPermission = useHasPermission(guildId, null, Permissions.KICK_MEMBERS);
   const hasBanPermission = useHasPermission(guildId, null, Permissions.BAN_MEMBERS);
   const canManageRoles = useHasPermission(guildId, null, Permissions.MANAGE_ROLES);
-  const canKick = user?.id !== store.user?.id && hasKickPermission;
-  const canBan = user?.id !== store.user?.id && hasBanPermission;
+  const canKick = user?.id !== currentUser?.id && hasKickPermission;
+  const canBan = user?.id !== currentUser?.id && hasBanPermission;
 
   const { guildRoles } = useRolesStore();
   const availableRoles = useMemo(() => {
@@ -201,7 +200,7 @@ const GuildMemberPopoverContent = ({ userId, onOpenProfile }) => {
           </div>
 
           <div className="absolute right-3 top-3 flex items-center gap-2">
-            {user.id !== store.user?.id && (
+            {user.id !== currentUser?.id && (
               <>
                 {!isFriend && !hasSentRequest && !hasReceivedRequest && (
                   <button
@@ -413,7 +412,7 @@ const GuildMemberPopoverContent = ({ userId, onOpenProfile }) => {
               </div>
             )}
 
-            {user.id !== store.user?.id && (
+            {user.id !== currentUser?.id && (
               <div className="mt-4">
                 <button
                   type="button"

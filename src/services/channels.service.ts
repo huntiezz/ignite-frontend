@@ -4,7 +4,6 @@ import { useGuildsStore } from '../store/guilds.store';
 import { useTypingStore } from '../store/typing.store';
 import api from '../api.js';
 import axios from 'axios';
-import useStore from '../hooks/useStore';
 import { NotificationService } from './notification.service';
 import { UnreadsService } from './unreads.service';
 import { useNotificationStore } from '../store/notification.store';

@@ -2,21 +2,21 @@ import { useMemo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useChannelsStore } from '../../store/channels.store';
 import { ChannelsService } from '@/services/channels.service';
-import useStore from '../../hooks/useStore';
+import { useUsersStore } from '../../store/users.store';
 
 import { getTwemojiUrl } from '../../utils/emoji.utils';
 
 const MessageReactions = ({ message, channelId }) => {
-  const store = useStore();
+  const currentUser = useUsersStore((s) => s.getCurrentUser());
   const channelReactions = useChannelsStore((s) => s.channelReactions);
 
   const messageReactions = useMemo(() => {
     const reactions = channelReactions[channelId]?.[message.id] || [];
     return reactions.map((reaction) => ({
       ...reaction,
-      me: reaction.users.includes(store.user.id),
+      me: reaction.users.includes(currentUser.id),
     }));
-  }, [channelReactions, channelId, message.id, store.user.id]);
+  }, [channelReactions, channelId, message.id, currentUser.id]);
 
   const handleReactionToggle = useCallback(
     (messageId, emoji) => {

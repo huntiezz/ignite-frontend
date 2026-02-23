@@ -16,7 +16,7 @@ import { useGuildsStore } from '../store/guilds.store';
 import GuildDialog from '../components/GuildDialog';
 import { useUnreadsStore } from '../store/unreads.store';
 import { useChannelsStore } from '../store/channels.store';
-import useStore from '../hooks/useStore';
+import { useUsersStore } from '../store/users.store';
 import Avatar from '../components/Avatar';
 import { useFriendsStore } from '../store/friends.store';
 import { ChannelsService } from '../services/channels.service';
@@ -231,7 +231,7 @@ const GuildsSidebar = () => {
   const { guildId, channelId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useStore();
+  const user = useUsersStore((s) => s.getCurrentUser());
   const { guilds } = useGuildsStore();
   const { channelUnreads, channelUnreadsLoaded } = useUnreadsStore();
   const { channels, channelMessages } = useChannelsStore();

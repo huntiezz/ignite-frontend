@@ -1,5 +1,4 @@
 import { useUsersStore } from '@/store/users.store';
-import useStore from '../hooks/useStore';
 import { useChannelsStore } from '../store/channels.store';
 import { useNotificationStore } from '../store/notification.store';
 import { SoundService } from './sound.service';

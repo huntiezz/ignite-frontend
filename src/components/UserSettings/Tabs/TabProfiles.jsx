@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import api from '../../../api';
-import useStore from '../../../hooks/useStore';
+import { useUsersStore } from '@/store/users.store';
 import Avatar from '../../Avatar';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
@@ -29,8 +29,8 @@ const fileToDataUrl = (file) =>
 const REMOVE = '';
 
 const TabProfiles = () => {
-  const store = useStore();
-  const user = store.user;
+  const user = useUsersStore((s) => s.getCurrentUser());
+  const setUser = useUsersStore((s) => s.setUser);
 
   const [pendingAvatar, setPendingAvatar] = useState(null);
   const [pendingBanner, setPendingBanner] = useState(null);
@@ -93,7 +93,7 @@ const TabProfiles = () => {
 
         const response = await api.patch('/users/@me', body);
         const updatedUser = response.data;
-        store.setUser({ ...store.user, ...updatedUser });
+        setUser(user.id, { ...user, ...updatedUser });
         setPendingAvatar(null);
         setPendingBanner(null);
         toast.success('Profile updated successfully');
@@ -102,7 +102,7 @@ const TabProfiles = () => {
         toast.error('Failed to update profile');
       }
     },
-    [store, pendingAvatar, pendingBanner]
+    [user, setUser, pendingAvatar, pendingBanner]
   );
 
   const watchedName = form.watch('name');

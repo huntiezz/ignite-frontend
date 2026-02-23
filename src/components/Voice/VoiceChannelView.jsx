@@ -15,7 +15,6 @@ import {
 import { useVoiceStore } from '@/store/voice.store';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useUsersStore } from '@/store/users.store';
-import useStore from '@/hooks/useStore';
 import { VoiceService } from '@/services/voice.service';
 import ParticipantTile from './ParticipantTile';
 import Avatar from '../Avatar';
@@ -98,7 +97,7 @@ const ScreenShareTile = ({ voiceState, isWatching, onWatch }) => {
     };
   }, [isLocal, isWatching, room, voiceState.user_id]);
 
-  const currentUser = useStore((s) => s.user);
+  const currentUser = useUsersStore((s) => s.getCurrentUser());
   const user =
     String(voiceState.user_id) === String(currentUser?.id)
       ? currentUser
@@ -159,7 +158,7 @@ const ScreenShareTile = ({ voiceState, isWatching, onWatch }) => {
 
 const VoiceChannelView = ({ channel }) => {
   const { voiceStates: allVoiceStates, connectionState, isMuted, isCameraOn, isScreenSharing } = useVoiceStore();
-  const currentUser = useStore((s) => s.user);
+  const currentUser = useUsersStore((s) => s.getCurrentUser());
   const usersStore = useUsersStore();
 
   const channelId = channel?.channel_id;

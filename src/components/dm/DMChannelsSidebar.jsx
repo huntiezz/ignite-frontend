@@ -3,7 +3,7 @@ import { UserStarIcon, SquarePen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '../ui/badge';
 import { useChannelsStore } from '@/store/channels.store';
-import useStore from '@/hooks/useStore';
+import { useUsersStore } from '@/store/users.store';
 import { useUnreadsStore } from '@/store/unreads.store';
 import { useFriendsStore } from '@/store/friends.store';
 import DMChannelItem from './DMChannelItem';
@@ -47,8 +47,7 @@ const ChannelSection = ({
 };
 
 const DMChannelsSidebar = ({ activeChannelId, onNavigate }) => {
-  const store = useStore();
-  const currentUser = store.user || { id: 'me' };
+  const currentUser = useUsersStore((s) => s.getCurrentUser()) || { id: 'me' };
   const [newDMOpen, setNewDMOpen] = useState(false);
   const { channels, pinnedChannelIds } = useChannelsStore();
   const { channelUnreads, channelUnreadsLoaded } = useUnreadsStore();

@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { useUsersStore } from '@/store/users.store';
-import Avatar from '../../Avatar';
-import { Button } from '../../ui/button';
+import Avatar from '../Avatar';
+import { Button } from '../ui/button';
 import { KeyRound } from 'lucide-react';
-import { Separator } from '../../ui/separator';
-import ChangeUsernameDialog from '../Dialogs/ChangeUsernameDialog';
-import ChangeEmailDialog from '../Dialogs/ChangeEmailDialog';
-import ChangePasswordDialog from '../Dialogs/ChangePasswordDialog';
+import { Separator } from '../ui/separator';
+import ChangeUsernameDialog from './ChangeUsernameDialog';
+import ChangeEmailDialog from './ChangeEmailDialog';
+import ChangePasswordDialog from './ChangePasswordDialog';
+import { useUsersStore } from '../../store/users.store';
 
 const TabMyAccount = ({ onNavigateToProfiles }) => {
-  const user = useUsersStore((s) => s.getCurrentUser());
+  const user = useUsersStore().getCurrentUser();
   const [isUsernameDialogOpen, setIsUsernameDialogOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);

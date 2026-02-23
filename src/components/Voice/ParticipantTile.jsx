@@ -4,12 +4,11 @@ import { DotsThree, MicrophoneSlash } from '@phosphor-icons/react';
 import Avatar from '../Avatar';
 import { useVoiceStore } from '@/store/voice.store';
 import { useUsersStore } from '@/store/users.store';
-import useStore from '@/hooks/useStore';
 
 const ParticipantTile = ({ voiceState }) => {
   const videoRef = useRef(null);
   const room = useVoiceStore((s) => s.room);
-  const currentUser = useStore((s) => s.user);
+  const currentUser = useUsersStore((s) => s.getCurrentUser());
   const user =
     String(voiceState.user_id) === String(currentUser?.id)
       ? currentUser
