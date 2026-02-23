@@ -79,63 +79,63 @@ const ChangeEmailDialog = ({ open, onOpenChange }) => {
             Enter your new email address and current password.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <FormProvider {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label
-                htmlFor="dialogEmail"
-                className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
-              >
-                New Email
-              </Label>
-              <Controller
-                name="email"
-                rules={{
-                  required: 'Email address is required.',
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: 'Please enter a valid email address.',
-                  },
-                }}
-                render={({ field }) => (
-                  <>
-                    <Input id="dialogEmail" placeholder="Your new email address" {...field} />
-                    <FieldError>{form.formState.errors.email?.message}</FieldError>
-                  </>
-                )}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label
-                htmlFor="dialogEmailPassword"
-                className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
-              >
-                Current Password
-              </Label>
-              <Controller
-                name="currentPassword"
-                rules={{ required: 'Current password is required.' }}
-                render={({ field }) => (
-                  <>
-                    <Input
-                      id="dialogEmailPassword"
-                      type="password"
-                      placeholder="Your current password"
-                      {...field}
-                    />
-                    <FieldError>{form.formState.errors.currentPassword?.message}</FieldError>
-                  </>
-                )}
-              />
-            </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => form.reset()}>Cancel</AlertDialogCancel>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Saving...' : 'Save'}
-              </Button>
-            </AlertDialogFooter>
-          </form>
-        </FormProvider>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label
+              htmlFor="dialogEmail"
+              className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
+            >
+              New Email
+            </Label>
+            <Controller
+              control={form.control}
+              name="email"
+              rules={{
+                required: 'Email address is required.',
+                pattern: {
+                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                  message: 'Please enter a valid email address.',
+                },
+              }}
+              render={({ field }) => (
+                <>
+                  <Input id="dialogEmail" placeholder="Your new email address" {...field} />
+                  <FieldError>{form.formState.errors.email?.message}</FieldError>
+                </>
+              )}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label
+              htmlFor="dialogEmailPassword"
+              className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
+            >
+              Current Password
+            </Label>
+            <Controller
+              control={form.control}
+              name="currentPassword"
+              rules={{ required: 'Current password is required.' }}
+              render={({ field }) => (
+                <>
+                  <Input
+                    id="dialogEmailPassword"
+                    type="password"
+                    placeholder="Your current password"
+                    {...field}
+                  />
+                  <FieldError>{form.formState.errors.currentPassword?.message}</FieldError>
+                </>
+              )}
+            />
+          </div>
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => form.reset()}>Cancel</AlertDialogCancel>
+          <Button type="button" onClick={form.handleSubmit(onSubmit)} disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? 'Saving...' : 'Save'}
+          </Button>
+        </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
@@ -176,94 +176,95 @@ const ChangePasswordDialog = ({ open, onOpenChange }) => {
             Enter your current password and choose a new one.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <FormProvider {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label
-                htmlFor="dialogCurrentPassword"
-                className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
-              >
-                Current Password
-              </Label>
-              <Controller
-                name="currentPassword"
-                rules={{ required: 'Current password is required.' }}
-                render={({ field }) => (
-                  <>
-                    <Input
-                      id="dialogCurrentPassword"
-                      type="password"
-                      placeholder="Your current password"
-                      {...field}
-                    />
-                    <FieldError>{form.formState.errors.currentPassword?.message}</FieldError>
-                  </>
-                )}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label
-                htmlFor="dialogNewPassword"
-                className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
-              >
-                New Password
-              </Label>
-              <Controller
-                name="newPassword"
-                rules={{
-                  required: 'New password is required',
-                  minLength: { value: 8, message: 'Password must be at least 8 characters long' },
-                  maxLength: { value: 64, message: 'Password must be at most 64 characters long' },
-                }}
-                render={({ field }) => (
-                  <>
-                    <Input
-                      id="dialogNewPassword"
-                      type="password"
-                      placeholder="Your new password"
-                      {...field}
-                    />
-                    <FieldError>{form.formState.errors.newPassword?.message}</FieldError>
-                  </>
-                )}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label
-                htmlFor="dialogConfirmNewPassword"
-                className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
-              >
-                Confirm New Password
-              </Label>
-              <Controller
-                name="confirmNewPassword"
-                rules={{
-                  required: 'Please confirm your new password',
-                  minLength: { value: 8, message: 'Password must be at least 8 characters long' },
-                  maxLength: { value: 64, message: 'Password must be at most 64 characters long' },
-                  validate: (value) => value === newPasswordValue || 'Passwords do not match',
-                }}
-                render={({ field }) => (
-                  <>
-                    <Input
-                      id="dialogConfirmNewPassword"
-                      type="password"
-                      placeholder="Confirm your new password"
-                      {...field}
-                    />
-                    <FieldError>{form.formState.errors.confirmNewPassword?.message}</FieldError>
-                  </>
-                )}
-              />
-            </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => form.reset()}>Cancel</AlertDialogCancel>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Saving...' : 'Save'}
-              </Button>
-            </AlertDialogFooter>
-          </form>
-        </FormProvider>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label
+              htmlFor="dialogCurrentPassword"
+              className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
+            >
+              Current Password
+            </Label>
+            <Controller
+              control={form.control}
+              name="currentPassword"
+              rules={{ required: 'Current password is required.' }}
+              render={({ field }) => (
+                <>
+                  <Input
+                    id="dialogCurrentPassword"
+                    type="password"
+                    placeholder="Your current password"
+                    {...field}
+                  />
+                  <FieldError>{form.formState.errors.currentPassword?.message}</FieldError>
+                </>
+              )}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label
+              htmlFor="dialogNewPassword"
+              className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
+            >
+              New Password
+            </Label>
+            <Controller
+              control={form.control}
+              name="newPassword"
+              rules={{
+                required: 'New password is required',
+                minLength: { value: 8, message: 'Password must be at least 8 characters long' },
+                maxLength: { value: 64, message: 'Password must be at most 64 characters long' },
+              }}
+              render={({ field }) => (
+                <>
+                  <Input
+                    id="dialogNewPassword"
+                    type="password"
+                    placeholder="Your new password"
+                    {...field}
+                  />
+                  <FieldError>{form.formState.errors.newPassword?.message}</FieldError>
+                </>
+              )}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label
+              htmlFor="dialogConfirmNewPassword"
+              className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
+            >
+              Confirm New Password
+            </Label>
+            <Controller
+              control={form.control}
+              name="confirmNewPassword"
+              rules={{
+                required: 'Please confirm your new password',
+                minLength: { value: 8, message: 'Password must be at least 8 characters long' },
+                maxLength: { value: 64, message: 'Password must be at most 64 characters long' },
+                validate: (value) => value === newPasswordValue || 'Passwords do not match',
+              }}
+              render={({ field }) => (
+                <>
+                  <Input
+                    id="dialogConfirmNewPassword"
+                    type="password"
+                    placeholder="Confirm your new password"
+                    {...field}
+                  />
+                  <FieldError>{form.formState.errors.confirmNewPassword?.message}</FieldError>
+                </>
+              )}
+            />
+          </div>
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => form.reset()}>Cancel</AlertDialogCancel>
+          <Button type="button" onClick={form.handleSubmit(onSubmit)} disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? 'Saving...' : 'Save'}
+          </Button>
+        </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
@@ -312,72 +313,72 @@ const ChangeUsernameDialog = ({ open, onOpenChange }) => {
             Enter a new username and your current password.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <FormProvider {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label
-                htmlFor="dialogUsername"
-                className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
-              >
-                New Username
-              </Label>
-              <Controller
-                name="username"
-                rules={{
-                  required: 'Username is required.',
-                  minLength: {
-                    value: 2,
-                    message: 'Username must be at least 2 characters long.',
-                  },
-                  maxLength: {
-                    value: 32,
-                    message: 'Username must be at most 32 characters long.',
-                  },
-                  pattern: {
-                    value: /^[a-zA-Z0-9_-]+$/,
-                    message:
-                      'Username can only contain letters, numbers, underscores, and hyphens.',
-                  },
-                }}
-                render={({ field }) => (
-                  <>
-                    <Input id="dialogUsername" placeholder="Your new username" {...field} />
-                    <FieldError>{form.formState.errors.username?.message}</FieldError>
-                  </>
-                )}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label
-                htmlFor="dialogUsernamePassword"
-                className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
-              >
-                Current Password
-              </Label>
-              <Controller
-                name="currentPassword"
-                rules={{ required: 'Current password is required.' }}
-                render={({ field }) => (
-                  <>
-                    <Input
-                      id="dialogUsernamePassword"
-                      type="password"
-                      placeholder="Your current password"
-                      {...field}
-                    />
-                    <FieldError>{form.formState.errors.currentPassword?.message}</FieldError>
-                  </>
-                )}
-              />
-            </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => form.reset()}>Cancel</AlertDialogCancel>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Saving...' : 'Save'}
-              </Button>
-            </AlertDialogFooter>
-          </form>
-        </FormProvider>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label
+              htmlFor="dialogUsername"
+              className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
+            >
+              New Username
+            </Label>
+            <Controller
+              control={form.control}
+              name="username"
+              rules={{
+                required: 'Username is required.',
+                minLength: {
+                  value: 2,
+                  message: 'Username must be at least 2 characters long.',
+                },
+                maxLength: {
+                  value: 32,
+                  message: 'Username must be at most 32 characters long.',
+                },
+                pattern: {
+                  value: /^[a-zA-Z0-9_-]+$/,
+                  message:
+                    'Username can only contain letters, numbers, underscores, and hyphens.',
+                },
+              }}
+              render={({ field }) => (
+                <>
+                  <Input id="dialogUsername" placeholder="Your new username" {...field} />
+                  <FieldError>{form.formState.errors.username?.message}</FieldError>
+                </>
+              )}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label
+              htmlFor="dialogUsernamePassword"
+              className="text-xs font-bold uppercase tracking-wide text-muted-foreground"
+            >
+              Current Password
+            </Label>
+            <Controller
+              control={form.control}
+              name="currentPassword"
+              rules={{ required: 'Current password is required.' }}
+              render={({ field }) => (
+                <>
+                  <Input
+                    id="dialogUsernamePassword"
+                    type="password"
+                    placeholder="Your current password"
+                    {...field}
+                  />
+                  <FieldError>{form.formState.errors.currentPassword?.message}</FieldError>
+                </>
+              )}
+            />
+          </div>
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => form.reset()}>Cancel</AlertDialogCancel>
+          <Button type="button" onClick={form.handleSubmit(onSubmit)} disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? 'Saving...' : 'Save'}
+          </Button>
+        </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
