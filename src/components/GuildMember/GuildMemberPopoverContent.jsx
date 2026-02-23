@@ -188,7 +188,7 @@ const GuildMemberPopoverContent = ({ userId, onOpenProfile }) => {
             >
               <Avatar user={user} className="size-20 !cursor-pointer text-3xl" />
               {user.status === 'online' && (
-                <div className="absolute bottom-1 right-1 z-10 size-6 rounded-full border-4 border-[#111214] bg-[#23a559]" />
+                <div className="absolute -bottom-0.5 -right-0.5 z-10 size-6 rounded-full border-4 border-[#111214] bg-[#23a559]" />
               )}
 
               <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition group-hover:opacity-100">

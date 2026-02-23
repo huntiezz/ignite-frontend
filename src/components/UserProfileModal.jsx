@@ -170,7 +170,7 @@ const UserProfileModal = ({ userId, open, onOpenChange }) => {
             <div className="rounded-full ring-[6px] ring-[#111214]">
               <Avatar user={user} className="size-[94px] !cursor-default text-4xl" />
             </div>
-            <div className="absolute bottom-2 right-2 size-6 rounded-full border-4 border-[#111214] bg-[#23a559]" />
+            <div className="absolute bottom-0 right-0 size-6 rounded-full border-4 border-[#111214] bg-[#23a559]" />
           </div>
 
           {/* Actions Corner */}
