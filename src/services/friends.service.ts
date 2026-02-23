@@ -1,14 +1,18 @@
 import { toast } from 'sonner';
 import { useFriendsStore } from '../store/friends.store';
+import { useUsersStore } from '../store/users.store';
 import api from '../api.js';
 import type { Friend, FriendRequest } from '../store/friends.store';
+import type { User } from '../store/users.store';
 
 export const FriendsService = {
   async loadFriends() {
     const { setFriends } = useFriendsStore.getState();
+    const { setUsers } = useUsersStore.getState();
     try {
       const { data } = await api.get<Friend[]>('@me/friends');
       setFriends(data);
+      setUsers(data as User[]);
     } catch {
       toast.error('Unable to load friends.');
     }
@@ -16,9 +20,14 @@ export const FriendsService = {
 
   async loadRequests() {
     const { setRequests } = useFriendsStore.getState();
+    const { setUsers } = useUsersStore.getState();
     try {
       const { data } = await api.get<FriendRequest[]>('@me/friends/requests');
       setRequests(data);
+      const users = data.flatMap((req) =>
+        [req.sender, req.receiver, req.user].filter((u): u is User => !!u)
+      );
+      setUsers(users);
     } catch {
       console.error('Unable to load friend requests.');
     }

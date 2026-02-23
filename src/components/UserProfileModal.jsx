@@ -2,7 +2,9 @@ import { useState, useContext, useMemo, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from './ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import Avatar from './Avatar';
 import {
   UserCircle,
@@ -146,7 +148,10 @@ const UserProfileModal = ({ userId, open, onOpenChange }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl border-none bg-transparent p-0 shadow-2xl [&>button]:hidden">
+      <DialogContent aria-describedby={undefined} className="max-w-xl border-none bg-transparent p-0 shadow-2xl [&>button]:hidden">
+        <VisuallyHidden>
+          <DialogTitle>User Profile</DialogTitle>
+        </VisuallyHidden>
         <div className="w-full overflow-hidden rounded-xl bg-[#111214]">
           {/* Banner */}
           <div

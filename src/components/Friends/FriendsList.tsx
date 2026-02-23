@@ -14,6 +14,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import UserProfileModal from '@/components/UserProfileModal';
+import { useUsersStore } from '@/store/users.store';
 import type { Friend } from '@/store/friends.store';
 
 type FriendsListProps = {
@@ -24,6 +25,7 @@ type FriendsListProps = {
 const FriendsList = ({ friends, filter }: FriendsListProps) => {
   const navigate = useNavigate();
   const { channels } = useChannelsStore();
+  const getUser = useUsersStore((s) => s.getUser);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
 
   const messageUser = (userId: string) => {
@@ -59,17 +61,22 @@ const FriendsList = ({ friends, filter }: FriendsListProps) => {
         <div className="mb-4 text-[10px] font-semibold uppercase text-gray-400">
           {filter} — {filteredFriends.length}
         </div>
-        {filteredFriends.map((friend) => (
+        {filteredFriends.map((friend) => {
+          const user = getUser(friend.id) ?? friend;
+          return (
           <ContextMenu key={friend.id}>
             <ContextMenuTrigger>
-              <div className="border-white/5/30 group flex cursor-pointer items-center justify-between border-t px-2 py-3 hover:rounded-lg hover:bg-gray-600/30">
+              <div
+                onClick={() => messageUser(friend.id)}
+                className="border-white/5/30 group flex cursor-pointer items-center justify-between border-t px-2 py-3 hover:rounded-lg hover:bg-gray-600/30"
+              >
                 <div className="flex items-center gap-3">
-                  <Avatar user={friend} className="size-8 rounded-full" />
+                  <Avatar user={user} className="size-8 rounded-full" />
                   <div>
                     <div className="text-sm font-bold text-white">
-                      {friend.name}
+                      {user.name}
                       <span className="ml-1 hidden text-xs text-gray-400 group-hover:inline">
-                        {friend.username}
+                        {user.username}
                       </span>
                     </div>
                     <div className="text-xs text-gray-400">{friend.status}</div>
@@ -112,7 +119,8 @@ const FriendsList = ({ friends, filter }: FriendsListProps) => {
               </ContextMenuItem>
             </ContextMenuContent>
           </ContextMenu>
-        ))}
+          );
+        })}
       </div>
       <UserProfileModal
         userId={profileUserId}
