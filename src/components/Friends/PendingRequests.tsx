@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { UserCheck, UserMinus } from 'lucide-react';
+import { Check, Minus, UserCheck, UserMinus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import Avatar from '@/components/Avatar';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import UserProfileModal from '@/components/UserProfileModal';
 import { FriendsService } from '@/services/friends.service';
 import { useUsersStore } from '@/store/users.store';
@@ -38,31 +39,43 @@ const PendingRequestRow = ({ request, currentUser, onClickUser }: PendingRequest
       </div>
       <div className="flex gap-2">
         {!isOutgoing && (
-          <button
-            onClick={() =>
-              handleAction(
-                FriendsService.acceptRequest(request.id),
-                'Request accepted',
-                'Failed to accept'
-              )
-            }
-            className="flex size-9 items-center justify-center rounded-full bg-gray-800 text-green-500 hover:bg-gray-900"
-          >
-            <UserCheck size={18} />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAction(
+                    FriendsService.acceptRequest(request.id),
+                    'Request accepted',
+                    'Failed to accept'
+                  );
+                }}
+                className="flex size-9 items-center justify-center rounded-full text-gray-500 hover:text-green-500 hover:bg-gray-900"
+              >
+                <Check size={18} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Accept</TooltipContent>
+          </Tooltip>
         )}
-        <button
-          onClick={() =>
-            handleAction(
-              FriendsService.cancelRequest(request.id),
-              'Request cancelled',
-              'Failed to cancel'
-            )
-          }
-          className="flex size-9 items-center justify-center rounded-full bg-gray-800 text-red-500 hover:bg-gray-900"
-        >
-          <UserMinus size={18} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(
+                  FriendsService.cancelRequest(request.id),
+                  'Request cancelled',
+                  'Failed to cancel'
+                );
+              }}
+              className="flex size-9 items-center justify-center rounded-full text-gray-500 hover:text-red-500 hover:bg-gray-900"
+            >
+              <X size={18} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{isOutgoing ? 'Cancel' : 'Ignore'}</TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );
