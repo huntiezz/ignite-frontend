@@ -1,12 +1,13 @@
 import { toast } from 'sonner';
 import { useFriendsStore } from '../store/friends.store';
 import api from '../api.js';
+import type { Friend, FriendRequest } from '../store/friends.store';
 
 export const FriendsService = {
   async loadFriends() {
     const { setFriends } = useFriendsStore.getState();
     try {
-      const { data } = await api.get('@me/friends');
+      const { data } = await api.get<Friend[]>('@me/friends');
       setFriends(data);
     } catch {
       toast.error('Unable to load friends.');
@@ -16,7 +17,7 @@ export const FriendsService = {
   async loadRequests() {
     const { setRequests } = useFriendsStore.getState();
     try {
-      const { data } = await api.get('@me/friends/requests');
+      const { data } = await api.get<FriendRequest[]>('@me/friends/requests');
       setRequests(data);
     } catch {
       console.error('Unable to load friend requests.');
@@ -25,28 +26,11 @@ export const FriendsService = {
 
   /**
    * Send a friend request to a user by username and sync local store.
-   *
-   * @param username The username of the user to send a friend request to.
-   * @returns void
    */
   async sendRequest(username: string) {
-    // if (!username.trim()) {
-    //   toast.error('Enter a username.');
-    //   return;
-    // }
-
-    // try {
-    //   await api.post('@me/friends/requests', null, {
-    //     params: { username },
-    //   });
-    //   toast.success('Friend request sent.');
-    //   await this.loadRequests();
-    // } catch {
-    //   toast.error('Unable to send friend request.');
-    // }
     const { requests, setRequests } = useFriendsStore.getState();
 
-    const { data } = await api.post('@me/friends/requests', { username });
+    const { data } = await api.post<FriendRequest>('@me/friends/requests', { username });
 
     // Optimistically update requests list
     setRequests([...requests, data]);
@@ -56,8 +40,6 @@ export const FriendsService = {
 
   /**
    * Accept a friend request by ID and sync local store.
-   *
-   * @param id The ID of the friend request to accept.
    */
   async acceptRequest(id: string) {
     try {
@@ -70,8 +52,6 @@ export const FriendsService = {
 
   /**
    * Cancel a friend request by ID and sync local store.
-   *
-   * @param id The ID of the friend request to cancel.
    */
   async cancelRequest(id: string) {
     try {
@@ -84,8 +64,6 @@ export const FriendsService = {
 
   /**
    * Delete a friend by ID and sync local store.
-   *
-   * @param id The ID of the friend to delete.
    */
   async deleteFriend(id: string) {
     try {

@@ -2,12 +2,24 @@ import { toast } from 'sonner';
 import api from '../api.js';
 import { useRolesStore } from '../store/roles.store.js';
 import { useGuildsStore } from '../store/guilds.store.js';
+import type { RoleEvent } from '../handlers/types';
+
+export type CreateRolePayload = {
+  name: string;
+};
+
+export type UpdateRolePayload = {
+  name?: string | null;
+  color?: number | null;
+  permissions?: number | null;
+  position?: number | null;
+  hoist?: boolean | null;
+  mentionable?: boolean | null;
+};
 
 export const RolesService = {
   /**
    * Initialize roles for each guild by guild.roles or fetching from Ignite API if not present.
-   *
-   * @returns void
    */
   async initializeGuildRoles() {
     const { setGuildRoles } = useRolesStore.getState();
@@ -30,12 +42,8 @@ export const RolesService = {
 
   /**
    * Create a new role in the specified guild and update the local store.
-   *
-   * @param guildId The ID of the guild where the role will be created.
-   * @param roleData The data for the new role.
-   * @returns void
    */
-  async createGuildRole(guildId: string, roleData: any) {
+  async createGuildRole(guildId: string, roleData: CreateRolePayload) {
     try {
       await api.post(`/guilds/${guildId}/roles`, roleData);
 
@@ -48,13 +56,8 @@ export const RolesService = {
 
   /**
    * Update an existing role in the specified guild and update the local store.
-   *
-   * @param guildId The ID of the guild where the role exists.
-   * @param roleId The ID of the role to be updated.
-   * @param updates The updates to be applied to the role.
-   * @returns void
    */
-  async updateGuildRole(guildId: string, roleId: string, updates: any) {
+  async updateGuildRole(guildId: string, roleId: string, updates: UpdateRolePayload) {
     await api.patch(`/guilds/${guildId}/roles/${roleId}`, updates);
 
     // Update role in local store
@@ -66,10 +69,6 @@ export const RolesService = {
 
   /**
    * Delete a role from the specified guild and update the local store.
-   *
-   * @param guildId The ID of the guild where the role exists.
-   * @param roleId The ID of the role to be deleted.
-   * @returns void
    */
   async deleteGuildRole(guildId: string, roleId: string) {
     try {
@@ -90,11 +89,6 @@ export const RolesService = {
 
   /**
    * Update roles for a member in the specified guild.
-   *
-   * @param guildId The ID of the guild where the member exists.
-   * @param memberId The ID of the member whose roles will be updated.
-   * @param roleIds The list of role IDs to assign to the member.
-   * @returns void
    */
   async updateMemberRoles(guildId: string, memberId: string, roleIds: string[]) {
     try {
@@ -111,11 +105,6 @@ export const RolesService = {
 
   /**
    * Assign a role to a member in the specified guild.
-   *
-   * @param guildId The ID of the guild where the member exists.
-   * @param memberId The ID of the member to whom the role will be assigned.
-   * @param roleId The ID of the role to assign to the member.
-   * @returns void
    */
   async assignRoleToMember(guildId: string, memberId: string, roleId: string) {
     const { guilds, guildMembers } = useGuildsStore.getState();
@@ -140,11 +129,6 @@ export const RolesService = {
 
   /**
    * Remove a role from a member in the specified guild.
-   *
-   * @param guildId The ID of the guild where the member exists.
-   * @param memberId The ID of the member from whom the role will be removed.
-   * @param roleId The ID of the role to remove from the member.
-   * @returns void
    */
   async removeRoleFromMember(guildId: string, memberId: string, roleId: string) {
     const { guilds, guildMembers } = useGuildsStore.getState();
@@ -171,13 +155,8 @@ export const RolesService = {
 
   /**
    * Check if member has a specific role in the specified guild.
-   *
-   * @param guildId The ID of the guild where the member exists.
-   * @param memberId The ID of the member to check.
-   * @param roleId The ID of the role to check for.
-   * @returns boolean
    */
-  async memberHasRole(guildId: string, memberId: string, roleId: string): Promise<boolean> {
+  memberHasRole(guildId: string, memberId: string, roleId: string): boolean {
     const { guilds, guildMembers } = useGuildsStore.getState();
 
     const guild = guilds.find((g) => g.id === guildId);
@@ -196,13 +175,7 @@ export const RolesService = {
     return currentRoleIds.includes(roleId);
   },
 
-  /**
-   * Handle role-related events from the WebSocket and update the local store accordingly.
-   *
-   * @param event The role event received from the WebSocket.
-   * @returns void
-   */
-  handleRoleCreated(event: any) {
+  handleRoleCreated(event: RoleEvent) {
     const { role } = event;
     const guildId = role.guild_id;
     const { guildRoles, setGuildRoles } = useRolesStore.getState();
@@ -210,7 +183,7 @@ export const RolesService = {
     setGuildRoles(guildId, [...roles, role]);
   },
 
-  handleRoleUpdated(event: any) {
+  handleRoleUpdated(event: RoleEvent) {
     const { role } = event;
     const guildId = role.guild_id;
     const { guildRoles, setGuildRoles } = useRolesStore.getState();
@@ -219,7 +192,7 @@ export const RolesService = {
     setGuildRoles(guildId, updatedRoles);
   },
 
-  handleRoleDeleted(event: any) {
+  handleRoleDeleted(event: RoleEvent) {
     const { role } = event;
     const guildId = role.guild_id;
     const { guildRoles, setGuildRoles } = useRolesStore.getState();

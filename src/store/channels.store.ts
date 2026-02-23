@@ -1,6 +1,74 @@
 import { create } from 'zustand';
+import type { User } from './users.store';
+import type { VoiceState } from './voice.store';
 
-type Reaction = {
+export type ChannelRolePermission = {
+  role_id: string;
+  allowed_permissions: number;
+  denied_permissions: number;
+};
+
+export type Channel = {
+  channel_id: string;
+  id?: string;
+  guild_id?: string;
+  name: string;
+  type: number;
+  position?: number;
+  parent_id?: string | null;
+  last_message_id?: string | null;
+  allowed_permissions?: number;
+  denied_permissions?: number;
+  role_permissions?: ChannelRolePermission[];
+  voice_states?: VoiceState[];
+  recipients?: User[];
+};
+
+export type Attachment = {
+  id: string;
+  filename: string;
+  size: number;
+  url?: string;
+  content_type?: string;
+  title?: string;
+  flags?: number;
+};
+
+export type MessageReference = {
+  guild_id?: string | null;
+  channel_id?: string | null;
+  message_id: string;
+};
+
+export type Message = {
+  id: string;
+  content: string;
+  nonce?: string;
+  author: User;
+  channel_id?: string;
+  created_at: string;
+  updated_at?: string;
+  attachments?: Attachment[];
+  message_reference?: MessageReference | null;
+  message_references?: MessageReference[];
+  sticker_ids?: string[];
+  mentions?: { user_id: string }[];
+  mention_everyone?: boolean;
+  mention_roles?: string[];
+  pinned?: boolean;
+};
+
+export type PendingMessage = {
+  nonce: string;
+  content: string;
+  author?: User;
+  created_at: string;
+  message_references: MessageReference[];
+  attachments: { id: string; filename: string; size: number }[];
+  uploadProgress?: number;
+};
+
+export type Reaction = {
   emoji: string;
   count: number;
   users: string[];
@@ -8,16 +76,16 @@ type Reaction = {
 };
 
 type ChannelsStore = {
-  channels: any[];
-  channelMessages: { [channelId: string]: any[] };
-  channelPendingMessages: { [channelId: string]: any[] };
+  channels: Channel[];
+  channelMessages: { [channelId: string]: Message[] };
+  channelPendingMessages: { [channelId: string]: PendingMessage[] };
   channelReactions: { [channelId: string]: { [messageId: string]: Reaction[] } };
   pinnedChannelIds: string[];
 
-  setChannels: (channels: any[]) => void;
-  addChannel: (channel: any) => void;
-  setChannelMessages: (channelId: string, messages: any[]) => void;
-  setChannelPendingMessages: (channelId: string, messages: any[]) => void;
+  setChannels: (channels: Channel[]) => void;
+  addChannel: (channel: Channel) => void;
+  setChannelMessages: (channelId: string, messages: Message[]) => void;
+  setChannelPendingMessages: (channelId: string, messages: PendingMessage[]) => void;
   addReaction: (channelId: string, messageId: string, emoji: string, userId: string) => void;
   removeReaction: (channelId: string, messageId: string, emoji: string, userId: string) => void;
   setMessageReactions: (channelId: string, messageId: string, reactions: Reaction[]) => void;
@@ -140,7 +208,7 @@ export const useChannelsStore = create<ChannelsStore>((set) => ({
           }
           return r;
         })
-        .filter((r) => r !== null) as Reaction[];
+        .filter((r): r is Reaction => r !== null);
 
       return {
         channelReactions: {

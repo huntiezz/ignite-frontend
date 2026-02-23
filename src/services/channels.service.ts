@@ -9,6 +9,21 @@ import { UnreadsService } from './unreads.service';
 import { useNotificationStore } from '../store/notification.store';
 import { useUsersStore } from '@/store/users.store';
 import { VoiceService } from './voice.service';
+import type { Channel, Message, PendingMessage } from '../store/channels.store';
+import type {
+  MessageEvent,
+  ChannelEvent,
+  ChannelPermissionEvent,
+  MemberTypingEvent,
+  ReactionEvent,
+  ReactionsSetEvent,
+} from '../handlers/types';
+
+export type CreateChannelPayload = {
+  name: string;
+  type: number;
+  parent_id?: string | null;
+};
 
 export const ChannelsService = {
   /**
@@ -40,7 +55,7 @@ export const ChannelsService = {
     const { guilds } = useGuildsStore.getState();
 
     try {
-      const { data } = await api.get('/@me/channels');
+      const { data } = await api.get<Channel[]>('/@me/channels');
       const guildChannels = guilds.flatMap((g) => g.channels || []);
       const mergedChannels = [...data, ...guildChannels];
 
@@ -57,9 +72,9 @@ export const ChannelsService = {
    * @param recipientsIds Array of user IDs to create a channel with
    * @returns The created channel data
    */
-  async createPrivateChannel(recipientsIds: string[]) {
+  async createPrivateChannel(recipientsIds: string[]): Promise<Channel | undefined> {
     try {
-      const { data } = await api.post('@me/channels', { recipients: recipientsIds });
+      const { data } = await api.post<Channel>('@me/channels', { recipients: recipientsIds });
 
       // Update local store only if channel doesn't already exist
       const { addChannel } = useChannelsStore.getState();
@@ -84,9 +99,9 @@ export const ChannelsService = {
    * @param channelData The data for the new channel
    * @returns The created channel data
    */
-  async createGuildChannel(guildId: string, channelData: any) {
+  async createGuildChannel(guildId: string, channelData: CreateChannelPayload): Promise<Channel | undefined> {
     try {
-      const { data } = await api.post(`/guilds/${guildId}/channels`, channelData);
+      const { data } = await api.post<Channel>(`/guilds/${guildId}/channels`, channelData);
 
       // Update local store
       const { channels, setChannels } = useChannelsStore.getState();
@@ -124,7 +139,7 @@ export const ChannelsService = {
 
   _lastTypingSent: {} as Record<string, number>,
 
-  handleMemberTyping(event: any) {
+  handleMemberTyping(event: MemberTypingEvent) {
     const currentUser = useUsersStore.getState().getCurrentUser();
     if (!event.member?.user || event.member.user.id === currentUser?.id) return;
     useTypingStore.getState().addTypingUser(event.channel.id, {
@@ -146,7 +161,7 @@ export const ChannelsService = {
     const generatedNonce = Date.now().toString() + Math.floor(Math.random() * 1000).toString();
     const currentUser = useUsersStore.getState().getCurrentUser();
 
-    const pendingMessage: any = {
+    const pendingMessage: PendingMessage = {
       nonce: generatedNonce,
       content: content,
       author: currentUser,
@@ -220,17 +235,17 @@ export const ChannelsService = {
       setChannelPendingMessages(
         channelId,
         (channelPendingMessages[channelId] || []).filter(
-          (msg: any) => msg.nonce !== pendingMessage.nonce
+          (msg) => msg.nonce !== pendingMessage.nonce
         )
       );
       toast.error('Unable to send message.');
     }
   },
 
-  async loadChannelMessages(channelId: string, beforeId: string | null = null) {
+  async loadChannelMessages(channelId: string, beforeId: string | null = null): Promise<Message[]> {
     const { channelMessages, setChannelMessages } = useChannelsStore.getState();
     try {
-      const { data } = await api.get(`/channels/${channelId}/messages`, {
+      const { data } = await api.get<Message[]>(`/channels/${channelId}/messages`, {
         params: {
           before: beforeId,
           limit: 50,
@@ -239,16 +254,16 @@ export const ChannelsService = {
 
       const mergedChannelMessages = [...(channelMessages[channelId] || []), ...data];
       const newChannelMessages = Array.from(
-        new Map(mergedChannelMessages.map((msg: any) => [msg.id, msg])).values()
-      ).sort((a: any, b: any) => a.id.localeCompare(b.id));
+        new Map(mergedChannelMessages.map((msg) => [msg.id, msg])).values()
+      ).sort((a, b) => a.id.localeCompare(b.id));
 
       setChannelMessages(channelId, newChannelMessages);
 
       // Cache message authors in users store
       const { users, setUsers } = useUsersStore.getState();
       const newAuthors = data
-        .filter((msg: any) => msg.author && !users[msg.author.id])
-        .map((msg: any) => msg.author);
+        .filter((msg) => msg.author && !users[msg.author.id])
+        .map((msg) => msg.author);
       if (newAuthors.length > 0) {
         setUsers(newAuthors);
       }
@@ -270,11 +285,8 @@ export const ChannelsService = {
 
   /**
    * Callback for the .message.created event from the WebSocket to update the local store with the new message.
-   *
-   * @param event The message created event data
-   * @return void
    */
-  handleMessageCreated(event: any) {
+  handleMessageCreated(event: MessageEvent) {
     const {
       channels,
       setChannels,
@@ -335,11 +347,8 @@ export const ChannelsService = {
 
   /**
    * Callback for the .message.deleted event from the WebSocket to update the local store by removing the deleted message.
-   *
-   * @param event The message deleted event data
-   * @return void
    */
-  handleMessageDeleted(event: any) {
+  handleMessageDeleted(event: MessageEvent) {
     const { channels, setChannels, channelMessages, setChannelMessages } =
       useChannelsStore.getState();
     const channelId = event.channel.id;
@@ -348,7 +357,7 @@ export const ChannelsService = {
       const filtered = channelMessages[channelId].filter((m) => m.id !== event.message.id);
       setChannelMessages(channelId, filtered);
 
-      const latest = [...filtered].sort((a, b) => b.id - a.id)[0];
+      const latest = [...filtered].sort((a, b) => b.id.localeCompare(a.id))[0];
 
       // Update last_message_id for the channel
       const newChannels = channels.map((c) =>
@@ -360,11 +369,8 @@ export const ChannelsService = {
 
   /**
    * Callback for the .message.updated event from the WebSocket to update the local store with the updated message data.
-   *
-   * @param event The message updated event data
-   * @return void
    */
-  handleMessageUpdated(event: any) {
+  handleMessageUpdated(event: MessageEvent) {
     const { channelMessages, setChannelMessages } = useChannelsStore.getState();
     const channelId = event.channel.id;
 
@@ -382,14 +388,11 @@ export const ChannelsService = {
 
   /**
    * Callback for the .channel.created event from the WebSocket to update the local store with the new channel.
-   *
-   * @param event The channel created event data
-   * @return void
    */
-  handleChannelCreated(event: any) {
+  handleChannelCreated(event: ChannelEvent) {
     const { channels, setChannels } = useChannelsStore.getState();
 
-    if (!channels.some((c) => c.channel_id === event.channel.id)) {
+    if (!channels.some((c) => c.channel_id === event.channel.channel_id)) {
       setChannels([...channels, event.channel]);
     }
   },
@@ -403,58 +406,27 @@ export const ChannelsService = {
    * For persistence across page refreshes and real-time sync with other users, the following backend integration is needed:
    * 1. API endpoints to save/remove reactions to the server
    * 2. WebSocket events to broadcast reaction changes to all connected clients
-   *
-   * @param channelId The ID of the channel
-   * @param messageId The ID of the message
-   * @param emoji The emoji to react with
    */
   toggleMessageReaction(channelId: string, messageId: string, emoji: string) {
     const user = useUsersStore.getState().getCurrentUser();
+    if (!user) return;
+
     const { channelReactions, addReaction, removeReaction } = useChannelsStore.getState();
 
     const messageReactions = channelReactions[channelId]?.[messageId] || [];
     const existingReaction = messageReactions.find((r) => r.emoji === emoji);
 
     if (existingReaction?.users.includes(user.id)) {
-      // Optimistic update — immediately reflect in UI
       removeReaction(channelId, messageId, emoji, user.id);
-      // TODO: BACKEND — Uncomment when the reaction API endpoints are implemented:
-      // api.delete(`/channels/${channelId}/messages/${messageId}/reactions/${encodeURIComponent(emoji)}/@me`)
-      //   .catch(() => {
-      //     // Rollback on failure
-      //     addReaction(channelId, messageId, emoji, user.id);
-      //     toast.error('Failed to remove reaction');
-      //   });
     } else {
-      // Optimistic update — immediately reflect in UI
       addReaction(channelId, messageId, emoji, user.id);
-      // TODO: BACKEND — Uncomment when the reaction API endpoints are implemented:
-      // api.put(`/channels/${channelId}/messages/${messageId}/reactions/${encodeURIComponent(emoji)}/@me`)
-      //   .catch(() => {
-      //     // Rollback on failure
-      //     removeReaction(channelId, messageId, emoji, user.id);
-      //     toast.error('Failed to add reaction');
-      //   });
     }
   },
 
   /**
    * Callback for the .message.reaction.added event from the WebSocket to add a reaction.
-   *
-   * BACKEND INTEGRATION: This handler is called when another user (or you, from another client) adds a reaction to a message.
-   * The server broadcasts this event via WebSocket when an API call is made to:
-   * PUT /channels/{channelId}/messages/{messageId}/reactions/{emoji}/@me
-   *
-   * To enable this:
-   * 1. Add this event listener in the WebSocket message handler (typically in websocket.service.ts or similar)
-   *    Example: websocket.on('message.reaction.added', (event) => ChannelsService.handleReactionAdded(event))
-   * 2. The backend should broadcast this event to all clients in the channel when a reaction is added
-   * 3. Each event should contain: { channel_id, message_id, emoji, user_id }
-   *
-   * @param event The reaction added event data: { channel_id, message_id, emoji, user_id }
-   * @return void
    */
-  handleReactionAdded(event: any) {
+  handleReactionAdded(event: ReactionEvent) {
     const { addReaction } = useChannelsStore.getState();
     const { channel_id, message_id, emoji, user_id } = event;
 
@@ -463,21 +435,8 @@ export const ChannelsService = {
 
   /**
    * Callback for the .message.reaction.removed event from the WebSocket to remove a reaction.
-   *
-   * BACKEND INTEGRATION: This handler is called when another user (or you, from another client) removes a reaction from a message.
-   * The server broadcasts this event via WebSocket when an API call is made to:
-   * DELETE /channels/{channelId}/messages/{messageId}/reactions/{emoji}/@me
-   *
-   * To enable this:
-   * 1. Add this event listener in the WebSocket message handler (typically in websocket.service.ts or similar)
-   *    Example: websocket.on('message.reaction.removed', (event) => ChannelsService.handleReactionRemoved(event))
-   * 2. The backend should broadcast this event to all clients in the channel when a reaction is removed
-   * 3. Each event should contain: { channel_id, message_id, emoji, user_id }
-   *
-   * @param event The reaction removed event data: { channel_id, message_id, emoji, user_id }
-   * @return void
    */
-  handleReactionRemoved(event: any) {
+  handleReactionRemoved(event: ReactionEvent) {
     const { removeReaction } = useChannelsStore.getState();
     const { channel_id, message_id, emoji, user_id } = event;
 
@@ -486,29 +445,15 @@ export const ChannelsService = {
 
   /**
    * Callback for the .message.reactions.set event from the WebSocket when loading existing reactions.
-   *
-   * BACKEND INTEGRATION: This handler is called when initially loading a message's reactions (e.g., when opening a channel).
-   * The server broadcasts this event via WebSocket after the client opens a channel to sync all existing reactions.
-   *
-   * To enable this:
-   * 1. Add this event listener in the WebSocket message handler (typically in websocket.service.ts or similar)
-   *    Example: websocket.on('message.reactions.set', (event) => ChannelsService.handleReactionsSet(event))
-   * 2. The backend should send this event for each message when a channel is opened
-   * 3. Or, implement a GET /channels/{channelId}/messages/{messageId}/reactions endpoint to load reactions
-   * 4. Each event should contain: { channel_id, message_id, reactions: Reaction[] }
-   *    Where Reaction = { emoji, count, users: string[], me: boolean }
-   *
-   * @param event The reactions set event data: { channel_id, message_id, reactions }
-   * @return void
    */
-  handleReactionsSet(event: any) {
+  handleReactionsSet(event: ReactionsSetEvent) {
     const { setMessageReactions } = useChannelsStore.getState();
     const { channel_id, message_id, reactions } = event;
 
     setMessageReactions(channel_id, message_id, reactions);
   },
 
-  handleChannelUpdated(event: any) {
+  handleChannelUpdated(event: ChannelEvent) {
     const { channels, setChannels } = useChannelsStore.getState();
     setChannels(
       channels.map((c) =>
@@ -517,18 +462,18 @@ export const ChannelsService = {
     );
   },
 
-  handleChannelDeleted(event: any) {
+  handleChannelDeleted(event: ChannelEvent) {
     const { channels, setChannels } = useChannelsStore.getState();
     setChannels(channels.filter((c) => c.channel_id !== event.channel.channel_id));
   },
 
-  handleChannelPermissionUpdated(event: any) {
+  handleChannelPermissionUpdated(event: ChannelPermissionEvent) {
     const { channels, setChannels } = useChannelsStore.getState();
     setChannels(
       channels.map((c) => {
         if (c.channel_id !== event.channel_id) return c;
         const rolePermissions = c.role_permissions || [];
-        const idx = rolePermissions.findIndex((rp: any) => rp.role_id === event.permission.role_id);
+        const idx = rolePermissions.findIndex((rp) => rp.role_id === event.permission.role_id);
         if (idx === -1) {
           return { ...c, role_permissions: [...rolePermissions, event.permission] };
         }
@@ -539,7 +484,7 @@ export const ChannelsService = {
     );
   },
 
-  handleChannelPermissionDeleted(event: any) {
+  handleChannelPermissionDeleted(event: ChannelPermissionEvent) {
     const { channels, setChannels } = useChannelsStore.getState();
     setChannels(
       channels.map((c) => {
@@ -547,7 +492,7 @@ export const ChannelsService = {
         return {
           ...c,
           role_permissions: (c.role_permissions || []).filter(
-            (rp: any) => rp.role_id !== event.permission.role_id
+            (rp) => rp.role_id !== event.permission.role_id
           ),
         };
       })

@@ -2,7 +2,7 @@ import api from '../api.js';
 
 export const UsersService = {
   async getUserProfile(userId: string, guildId?: string) {
-    const params: Record<string, any> = {
+    const params: Record<string, string | boolean> = {
       with_mutual_guilds: true,
       with_mutual_friends: true,
     };

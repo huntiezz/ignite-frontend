@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import api from '../api';
 
-type InviteGuild = {
+export type InviteGuild = {
   id: string;
   name: string;
   icon_file_id?: string;
@@ -9,19 +9,18 @@ type InviteGuild = {
   online_count?: number;
 };
 
-type InviteUser = {
+export type InviteUser = {
   id: string;
   username: string;
   name: string;
-  avatar?: string;
+  avatar_url?: string | null;
 };
 
-type Invite = {
+export type Invite = {
   code: string;
   guild: InviteGuild;
   user?: InviteUser;
   expires_at?: string;
-  [key: string]: any;
 };
 
 type InvitesStore = {

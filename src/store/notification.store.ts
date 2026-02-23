@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 
-type GuildSettings = {
+export type GuildNotificationSettings = {
   guild_id: string;
   suppress_everyone: boolean;
   suppress_roles: boolean;
-  message_notifications: number; // 0 = All Messages, 1 = Only @mentions, 2 = Nothing
+  message_notifications: number;
   muted_until: string | null;
   hide_muted_channels: boolean;
 };
@@ -14,14 +14,14 @@ type NotificationStore = {
   blockedUserIds: string[];
   mutedChannelIds: string[];
   mutedGuildIds: string[];
-  guildSettings: { [guildId: string]: GuildSettings };
+  guildSettings: { [guildId: string]: GuildNotificationSettings };
 
   setActiveChannelId: (channelId: string | null) => void;
   setBlockedUserIds: (userIds: string[]) => void;
   setMutedChannelIds: (channelIds: string[]) => void;
   setMutedGuildIds: (guildIds: string[]) => void;
-  setGuildSettings: (settings: GuildSettings[]) => void;
-  updateGuildSettings: (guildId: string, updates: Partial<GuildSettings>) => void;
+  setGuildNotificationSettings: (settings: GuildNotificationSettings[]) => void;
+  updateGuildNotificationSettings: (guildId: string, updates: Partial<GuildNotificationSettings>) => void;
 };
 
 export const useNotificationStore = create<NotificationStore>((set) => ({
@@ -35,11 +35,11 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
   setBlockedUserIds: (userIds) => set({ blockedUserIds: userIds }),
   setMutedChannelIds: (channelIds) => set({ mutedChannelIds: channelIds }),
   setMutedGuildIds: (guildIds) => set({ mutedGuildIds: guildIds }),
-  setGuildSettings: (settings) =>
+  setGuildNotificationSettings: (settings) =>
     set({
       guildSettings: Object.fromEntries(settings.map((s) => [s.guild_id, s])),
     }),
-  updateGuildSettings: (guildId, updates) =>
+  updateGuildNotificationSettings: (guildId, updates) =>
     set((state) => ({
       guildSettings: {
         ...state.guildSettings,

@@ -1,35 +1,35 @@
 import { toast } from 'sonner';
 import api from '../api.js';
 import { useNotificationStore } from '../store/notification.store';
+import type { GuildNotificationSettings } from '../store/notification.store';
+import type { GuildSettingsEvent } from '../handlers/types';
 
 export const GuildSettingsService = {
   async loadGuildSettings() {
-    const { setGuildSettings } = useNotificationStore.getState();
+    const { setGuildNotificationSettings } = useNotificationStore.getState();
     try {
-      const { data } = await api.get('/users/@me/guilds/settings');
-      setGuildSettings(data);
+      const { data } = await api.get<GuildNotificationSettings[]>('/users/@me/guilds/settings');
+      setGuildNotificationSettings(data);
     } catch {
       toast.error('Unable to load guild settings.');
     }
   },
 
-  async updateGuildSettings(guildId: string, updates: any) {
-    const { updateGuildSettings } = useNotificationStore.getState();
+  async updateGuildSettings(guildId: string, updates: Partial<GuildNotificationSettings>) {
     try {
       await api.patch('/users/@me/guilds/settings', [
         { guild_id: guildId, ...updates },
       ]);
-      //updateGuildSettings(guildId, updates);
     } catch (error) {
       console.error(error);
       toast.error('Unable to update notification settings.');
     }
   },
 
-  handleGuildSettingsUpdated(event: any) {
-    const { updateGuildSettings } = useNotificationStore.getState();
+  handleGuildSettingsUpdated(event: GuildSettingsEvent) {
+    const { updateGuildNotificationSettings } = useNotificationStore.getState();
     if (event.settings) {
-      updateGuildSettings(event.settings.guild_id, event.settings);
+      updateGuildNotificationSettings(event.settings.guild_id, event.settings);
     }
   },
 };

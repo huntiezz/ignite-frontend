@@ -16,7 +16,7 @@ export const PermissionsService = {
     const localUser = useUsersStore.getState().getCurrentUser();
     const guild = useGuildsStore.getState().guilds.find((g) => g.id === guildId);
 
-    if (!guild || !permission) return false;
+    if (!guild || !permission || !localUser) return false;
 
     // Guild owner has all permissions
     if (guild.owner_id === localUser.id) {

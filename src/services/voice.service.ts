@@ -4,6 +4,7 @@ import api from '../api.js';
 import { useVoiceStore, type VoiceState } from '../store/voice.store';
 import { SoundService } from './sound.service';
 import { useUsersStore } from '../store/users.store';
+import type { Channel } from '../store/channels.store';
 
 // RNNoise noise suppression — lazy-loaded to avoid WASM init at import time.
 // Runs entirely client-side via WASM + AudioWorklet. No cloud dependency.
@@ -132,8 +133,8 @@ function stopLocalSpeakingMonitor() {
 }
 
 export const VoiceService = {
-  seedVoiceStates(channels: any[]) {
-    const allVoiceStates = channels.flatMap((c: any) => c.voice_states || []);
+  seedVoiceStates(channels: Channel[]) {
+    const allVoiceStates = channels.flatMap((c) => c.voice_states || []);
     if (allVoiceStates.length > 0) {
       const existing = useVoiceStore.getState().voiceStates;
       const merged = [...existing, ...allVoiceStates];
@@ -145,8 +146,8 @@ export const VoiceService = {
       // Cache voice state users in users store
       const { users, setUsers } = useUsersStore.getState();
       const newUsers = allVoiceStates
-        .filter((vs: any) => vs.user && !users[vs.user.id])
-        .map((vs: any) => vs.user);
+        .filter((vs) => vs.user && !users[vs.user.id])
+        .map((vs) => vs.user!);
       if (newUsers.length > 0) {
         setUsers(newUsers);
       }

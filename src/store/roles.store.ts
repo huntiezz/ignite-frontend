@@ -1,9 +1,20 @@
 import { create } from 'zustand';
 
-type RolesStore = {
-  guildRoles: { [guildId: string]: any[] };
+export type Role = {
+  id: string;
+  guild_id: string;
+  name: string;
+  color: number | null;
+  permissions: number;
+  position: number;
+  hoist: boolean;
+  mentionable: boolean;
+};
 
-  setGuildRoles: (guildId: string, roles: any[]) => void;
+type RolesStore = {
+  guildRoles: { [guildId: string]: Role[] };
+
+  setGuildRoles: (guildId: string, roles: Role[]) => void;
 };
 
 export const useRolesStore = create<RolesStore>((set) => ({

@@ -1,38 +1,35 @@
 import { toast } from 'sonner';
 import api from '../api.js';
-import { GuildsService } from './guilds.service';
-import { ChannelsService } from './channels.service';
-import { FriendsService } from './friends.service';
-import { UnreadsService } from './unreads.service';
 import { useAuthStore } from '@/store/auth.store.js';
 import { useUsersStore } from '@/store/users.store.js';
-import { EmojisService } from './emojis.service';
-import { StickersService } from './stickers.service';
+import axios from 'axios';
+import type { Invite } from '../store/invites.store';
+import type { AuthResponse } from './auth.service';
 
 export const InvitesService = {
-  async getInvitePreview(code) {
-    try {
-      const { data } = await api.get(`/invites/${code}`);
-      return data;
-    } catch (error) {
-      throw error;
-    }
+  async getInvitePreview(code: string): Promise<Invite> {
+    const { data } = await api.get<Invite>(`/invites/${code}`);
+    return data;
   },
 
-  async acceptInvite(code) {
+  async acceptInvite(code: string) {
     try {
       await api.post(`/invites/${code}`);
       toast.success('Joined server successfully.');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to join server.');
+      if (axios.isAxiosError(error)) {
+        toast.error(error.response?.data?.message || 'Failed to join server.');
+      } else {
+        toast.error('Failed to join server.');
+      }
       throw error;
     }
   },
 
-  async acceptInviteWithQuickAccount(code, username) {
+  async acceptInviteWithQuickAccount(code: string, username: string) {
     try {
       // Register with username only
-      const { data } = await api.post('/register', { username });
+      const { data } = await api.post<AuthResponse>('/register', { username });
 
       // Store user in users store
       useUsersStore.getState().setUser(data.user.id, data.user);
@@ -45,7 +42,11 @@ export const InvitesService = {
 
       toast.success('Account created and joined server successfully.');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to create account and join.');
+      if (axios.isAxiosError(error)) {
+        toast.error(error.response?.data?.message || 'Failed to create account and join.');
+      } else {
+        toast.error('Failed to create account and join.');
+      }
       throw error;
     }
   },

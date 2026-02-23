@@ -120,7 +120,7 @@ export const EchoService = {
     this.activeGuildSubscriptions.add(guildId);
   },
 
-  subscribeToGuilds(guilds: any[]) {
+  subscribeToGuilds(guilds: { id: string }[]) {
     guilds.forEach((guild) => {
       this.subscribeToGuild(guild.id);
     });

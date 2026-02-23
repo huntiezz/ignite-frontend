@@ -1,11 +1,27 @@
 import { create } from 'zustand';
+import type { User } from './users.store';
+
+export type Friend = {
+  id: string;
+  user: User;
+  created_at?: string;
+};
+
+export type FriendRequest = {
+  id: string;
+  sender?: User;
+  receiver?: User;
+  user?: User;
+  status?: string;
+  created_at?: string;
+};
 
 type FriendsStore = {
-  friends: any[];
-  requests: any[];
+  friends: Friend[];
+  requests: FriendRequest[];
 
-  setFriends: (friends: any[]) => void;
-  setRequests: (requests: any[]) => void;
+  setFriends: (friends: Friend[]) => void;
+  setRequests: (requests: FriendRequest[]) => void;
   reset: () => void;
 };
 

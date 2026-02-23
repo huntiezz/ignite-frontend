@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import type { Room } from 'livekit-client';
+import type { User } from './users.store';
 
-export interface VoiceState {
+export type VoiceState = {
   user_id: string;
   guild_id: string;
   channel_id: string;
@@ -10,7 +11,8 @@ export interface VoiceState {
   self_video: boolean;
   self_stream: boolean;
   speaking?: boolean;
-}
+  user?: User;
+};
 
 interface VoiceStoreState {
   room: Room | null;

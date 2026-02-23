@@ -2,6 +2,7 @@ import { useUsersStore } from '@/store/users.store';
 import { useChannelsStore } from '../store/channels.store';
 import { useNotificationStore } from '../store/notification.store';
 import { SoundService } from './sound.service';
+import type { MessageEvent } from '../handlers/types';
 
 /**
  * Cross-tab coordination for desktop notifications.
@@ -29,7 +30,7 @@ export const NotificationService = {
    * Called when a new message arrives via WebSocket.
    * Runs guard checks, then plays sound and shows desktop notification.
    */
-  notifyNewMessage(event: any) {
+  notifyNewMessage(event: MessageEvent) {
     const user = useUsersStore.getState().getCurrentUser();
     const { channels } = useChannelsStore.getState();
     const { activeChannelId, blockedUserIds, mutedChannelIds, mutedGuildIds, guildSettings } =
@@ -59,7 +60,7 @@ export const NotificationService = {
         if (settings.message_notifications == 1) {
           const mentions = event.message.mentions || [];
           const isUserMentioned = mentions.some(
-            (m: any) => String(m.user_id) === String(user?.id)
+            (m) => String(m.user_id) === String(user?.id)
           );
           const hasEveryoneMention = !!event.message.mention_everyone && !settings.suppress_everyone;
           const hasRoleMention = (event.message.mention_roles || []).length > 0 && !settings.suppress_roles;
@@ -78,7 +79,7 @@ export const NotificationService = {
    * Show a desktop notification for an incoming message.
    * Only sends notifications in Electron via IPC — skipped on web.
    */
-  showDesktopNotification(event: any) {
+  showDesktopNotification(event: MessageEvent) {
     if (!window.IgniteNative?.isElectron) return;
 
     // Skip if another tab already handled this message

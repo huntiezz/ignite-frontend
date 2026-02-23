@@ -27,3 +27,4 @@ deploy_production.sh
 
 .env
 out/
+openapi.yaml

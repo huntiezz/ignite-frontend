@@ -1,12 +1,17 @@
 import { create } from 'zustand';
 import { useAuthStore } from './auth.store';
 
-type User = {
+export type User = {
   id: string;
-  username: string;
   name: string;
-  avatar?: string;
-  [key: string]: any;
+  username: string;
+  email?: string;
+  avatar_url: string | null;
+  banner_url?: string | null;
+  bio?: string | null;
+  is_bot: boolean;
+  created_at: string;
+  updated_at: string;
 };
 
 type UsersStore = {
