@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import api from '../../api';
 import { Button } from '../ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
 import { toast } from 'sonner';
 
 const ITEMS_PER_PAGE = 10;
@@ -38,26 +48,35 @@ const ServerInviteManager = ({ guild }) => {
     return invites.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [invites, startIndex]);
 
-  const handleDeleteInvite = async (inviteId) => {
+  const [pendingRevokeId, setPendingRevokeId] = useState(null);
+
+  const handleDeleteInvite = (inviteId) => {
     if (!guild?.id || !inviteId) return;
     // Unimplemented
     toast.error('Revoking invites is not implemented yet.');
     return;
 
-    const confirmDelete = window.confirm('Revoke this invite?');
-    if (!confirmDelete) return;
+    setPendingRevokeId(inviteId);
+  };
+
+  const confirmRevokeInvite = async () => {
+    if (!pendingRevokeId || !guild?.id) {
+      setPendingRevokeId(null);
+      return;
+    }
 
     setLoading(true);
     setError('');
 
     try {
-      await api.delete(`/guilds/${guild.id}/invites/${inviteId}`);
-      setInvites((prev) => prev.filter((invite) => (invite.id || invite.code) !== inviteId));
+      await api.delete(`/guilds/${guild.id}/invites/${pendingRevokeId}`);
+      setInvites((prev) => prev.filter((invite) => (invite.id || invite.code) !== pendingRevokeId));
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Could not delete invite.';
       setError(msg);
     } finally {
       setLoading(false);
+      setPendingRevokeId(null);
     }
   };
 
@@ -228,6 +247,26 @@ const ServerInviteManager = ({ guild }) => {
           </>
         )}
       </div>
+
+      <AlertDialog
+        open={!!pendingRevokeId}
+        onOpenChange={(open) => { if (!open) setPendingRevokeId(null); }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke this invite?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmRevokeInvite}>
+              Revoke
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

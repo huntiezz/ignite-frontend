@@ -27,6 +27,16 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useUnreadsStore } from '@/store/unreads.store';
 import { UnreadsService } from '@/services/unreads.service';
 import { isChannelUnread as checkChannelUnread, getChannelMentionCount as getChannelMentions } from '@/utils/unreads.utils';
@@ -99,8 +109,10 @@ const GuildSidebarCategory = ({
     [channelUnreads, channelUnreadsLoaded]
   );
 
+  const [pendingDeleteChannel, setPendingDeleteChannel] = useState(null);
+
   const handleDeleteChannel = useCallback(
-    async (channel) => {
+    (channel) => {
       if (!canManageChannels) {
         toast.error('Only the server owner can manage channels.');
         return;
@@ -115,12 +127,17 @@ const GuildSidebarCategory = ({
           return;
         }
       }
-      const confirmDelete = window.confirm('Delete this channel?');
-      if (!confirmDelete) return;
-      ChannelsService.deleteGuildChannel(guild.id, channel.channel_id);
+      setPendingDeleteChannel(channel);
     },
-    [canManageChannels, guild?.id]
+    [canManageChannels, guild?.id, channels]
   );
+
+  const confirmDeleteChannel = useCallback(() => {
+    if (pendingDeleteChannel && guild?.id) {
+      ChannelsService.deleteGuildChannel(guild.id, pendingDeleteChannel.channel_id);
+    }
+    setPendingDeleteChannel(null);
+  }, [pendingDeleteChannel, guild?.id]);
 
   const markChannelsAsRead = useCallback(async () => {
     const unreadChannels = sortedChannels.filter(isChannelUnread);
@@ -238,6 +255,26 @@ const GuildSidebarCategory = ({
           );
         })}
       </SortableContext>
+
+      <AlertDialog
+        open={!!pendingDeleteChannel}
+        onOpenChange={(open) => { if (!open) setPendingDeleteChannel(null); }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this channel?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmDeleteChannel}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
