@@ -101,6 +101,7 @@ const MemberList = ({ guildId }) => {
   const users = useUsersStore((state) => state.users);
   const [membersByRole, setMembersByRole] = useState({});
   const [membersWithoutRoles, setMembersWithoutRoles] = useState([]);
+  const [offlineMembers, setOfflineMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [collapsedRoles, setCollapsedRoles] = useState({});
 
@@ -153,6 +154,7 @@ const MemberList = ({ guildId }) => {
 
     setMembersByRole(tempMembersByRole);
     setMembersWithoutRoles(tempMembersWithoutRoles);
+    setOfflineMembers((activeGuild?.member_count ?? 0) < 200 ? tempOfflineMembers : []);
 
     // Auto-collapse groups with more than 100 members
     const autoCollapsed = {};
@@ -163,7 +165,7 @@ const MemberList = ({ guildId }) => {
     if (Object.keys(autoCollapsed).length > 0) {
       setCollapsedRoles((prev) => ({ ...autoCollapsed, ...prev }));
     }
-  }, [activeGuildMembers, roles, users]);
+  }, [activeGuildMembers, activeGuild, roles, users]);
 
   return (
     <div
@@ -215,6 +217,25 @@ const MemberList = ({ guildId }) => {
                     </div>
                     {!collapsedRoles['no-role'] &&
                       membersWithoutRoles.map((member) => (
+                        <MemberListItem key={member.user.id} member={member} />
+                      ))}
+                  </div>
+                )}
+                {offlineMembers.length > 0 && (
+                  <div>
+                    <div
+                      className="flex cursor-pointer items-center gap-1 px-2 py-1 text-xs font-bold text-gray-400 transition hover:text-gray-300"
+                      onClick={() => toggleRole('offline')}
+                    >
+                      {collapsedRoles['offline'] ? (
+                        <CaretRight size={12} weight="bold" />
+                      ) : (
+                        <CaretDown size={12} weight="bold" />
+                      )}
+                      Offline &mdash; {offlineMembers.length}
+                    </div>
+                    {!collapsedRoles['offline'] &&
+                      offlineMembers.map((member) => (
                         <MemberListItem key={member.user.id} member={member} />
                       ))}
                   </div>
