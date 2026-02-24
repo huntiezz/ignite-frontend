@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, act } from 'react';
 import { useChannelContext } from '../../contexts/ChannelContext.jsx';
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '../ui/context-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -97,13 +97,14 @@ const MemberListItem = ({ member }) => {
 
 const MemberList = ({ guildId }) => {
   const { memberListOpen } = useChannelContext();
-  const { guildMembers } = useGuildsStore();
+  const { guildMembers, guilds } = useGuildsStore();
   const users = useUsersStore((state) => state.users);
   const [membersByRole, setMembersByRole] = useState({});
   const [membersWithoutRoles, setMembersWithoutRoles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [collapsedRoles, setCollapsedRoles] = useState({});
 
+  const activeGuild = guilds.find((g) => g.id === guildId);
   const activeGuildMembers = guildMembers[guildId];
 
   useEffect(() => {
@@ -171,7 +172,7 @@ const MemberList = ({ guildId }) => {
       {memberListOpen && (
         <div className="flex h-full flex-col border-l border-white/5 bg-[#1a1a1e]">
           <div className="flex h-12 items-center border-b border-white/5 px-4 text-sm font-semibold text-gray-300">
-            Members - {activeGuildMembers?.length}
+            Members - {activeGuild?.member_count}
           </div>
           <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2 text-gray-400">
             {isLoading ? (
