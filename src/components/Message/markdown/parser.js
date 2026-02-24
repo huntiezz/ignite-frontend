@@ -112,11 +112,11 @@ export function parseMarkdown(content, emojiContext) {
     }
 
     // Ordered list
-    if (/^\d+\.\s/.test(line)) {
+    if (/^\d+\.\s?/.test(line) && /^\d+\./.test(line)) {
       const items = [];
       let ordinal = 1;
-      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
-        const m = lines[i].match(/^\d+\.\s(.+)/);
+      while (i < lines.length && /^\d+\./.test(lines[i])) {
+        const m = lines[i].match(/^\d+\.\s?(.*)/);
         items.push({ children: parseInline(m ? m[1] : '', emojiContext), ordinal });
         ordinal++;
         i++;
@@ -145,7 +145,7 @@ function isBlockStart(line) {
   if (line.startsWith('> ') || line === '>') return true;
   if (line.startsWith('-# ')) return true;
   if (line.startsWith('- ')) return true;
-  if (/^\d+\.\s/.test(line)) return true;
+  if (/^\d+\./.test(line)) return true;
   return false;
 }
 

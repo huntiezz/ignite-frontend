@@ -30,8 +30,9 @@ const ALERT_CONFIG = {
 
 // ─── Text rendering helper ───────────────────────────────────────
 
-function renderTextContent(content, key) {
+function renderTextContent(content, key, isReply) {
   if (!content.includes('\n')) return content;
+  if (isReply) return content.replace(/\n/g, ' ');
   const parts = content.split('\n');
   return parts.map((part, i) => (
     <Fragment key={`${key}-${i}`}>
@@ -48,7 +49,7 @@ function renderInlineNode(node, index, isReply) {
 
   switch (node.type) {
     case 'Text':
-      return <Fragment key={key}>{renderTextContent(node.content, key)}</Fragment>;
+      return <Fragment key={key}>{renderTextContent(node.content, key, isReply)}</Fragment>;
 
     case 'Bold':
       return (
@@ -178,6 +179,33 @@ function renderInlineNode(node, index, isReply) {
 
 function renderBlockNode(node, index, isReply) {
   const key = `b-${index}`;
+
+  // In reply context, flatten all block nodes to inline text
+  if (isReply) {
+    if (node.type === 'CodeBlock') {
+      return <span key={key} className="text-gray-400">{node.content}</span>;
+    }
+    if (node.type === 'List') {
+      return (
+        <Fragment key={key}>
+          {node.items.map((item, i) => (
+            <Fragment key={i}>
+              {i > 0 && ' '}
+              {node.ordered && `${i + 1}. `}
+              {item.children.map((child, j) => renderInlineNode(child, `${key}-${i}-${j}`, true))}
+            </Fragment>
+          ))}
+        </Fragment>
+      );
+    }
+    // Heading, Blockquote, Alert, Subtext — just render children inline
+    const children = node.children || [];
+    return (
+      <Fragment key={key}>
+        {children.map((child, i) => renderInlineNode(child, `${key}-${i}`, true))}
+      </Fragment>
+    );
+  }
 
   switch (node.type) {
     case 'Heading': {

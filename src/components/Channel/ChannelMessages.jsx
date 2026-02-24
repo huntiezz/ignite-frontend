@@ -76,12 +76,7 @@ const ChannelMessages = ({ channel, messageId }) => {
 
     if (!messagesRef.current) return;
     if (!messageId) {
-      const saved = scrollPositions.getMessage(channel?.channel_id);
-      if (saved != null && !saved.nearBottom) {
-        messagesRef.current.scrollTop = saved.scrollTop;
-      } else {
-        messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
-      }
+      setTimeout(() => setForceScrollDown(true), 0);
     }
   }, [channel?.channel_id, channelMessages, messageId]);
 
