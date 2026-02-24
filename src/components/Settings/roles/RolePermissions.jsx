@@ -6,7 +6,7 @@ const RolePermissions = ({ activePermissions, onTogglePermission }) => {
   return (
     <ScrollArea className="h-[320px] pr-2">
       <div className="grid gap-3">
-        {PERMISSION_GROUPS.map((group, groupIdx) => (
+        {PERMISSION_GROUPS.role.map((group, groupIdx) => (
           <div key={groupIdx} className="space-y-3">
             <h4 className="sticky top-0 z-10 border-b bg-background/95 py-2 text-xs font-bold uppercase text-muted-foreground backdrop-blur">
               {group.name}
