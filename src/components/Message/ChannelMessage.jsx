@@ -7,7 +7,7 @@ import { useChannelsStore } from '../../store/channels.store';
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '../ui/context-menu';
 import { Popover, PopoverContent } from '../ui/popover';
 import Avatar from '../Avatar.jsx';
-import GuildMemberContextMenu, { KickBanDialog } from '../GuildMember/GuildMemberContextMenu';
+import GuildMemberContextMenu from '../GuildMember/GuildMemberContextMenu';
 import GuildMemberPopoverContent from '../GuildMember/GuildMemberPopoverContent';
 import UserProfileModal from '../UserProfileModal';
 import MessageContent from './MessageContent.jsx';
@@ -36,7 +36,6 @@ const ChannelMessage = memo(
     const [profileModalOpen, setProfileModalOpen] = useState(false);
     const [popoverOpen, setPopoverOpen] = useState(false);
     const avatarClickedRef = useRef(false);
-    const [confirmAction, setConfirmAction] = useState(null);
     const [contextImageUrl, setContextImageUrl] = useState(null);
     const { setReplyingId, replyingId } = useChannelContext();
     const channelId = message.channel_id;
@@ -173,7 +172,6 @@ const ChannelMessage = memo(
                           setPopoverOpen(false);
                           setProfileModalOpen(true);
                         }}
-                        onConfirmAction={setConfirmAction}
                       />
                     </ContextMenuContent>
                   </ContextMenu>
@@ -288,7 +286,6 @@ const ChannelMessage = memo(
           open={profileModalOpen}
           onOpenChange={setProfileModalOpen}
         />
-        <KickBanDialog user={message.author} confirmAction={confirmAction} setConfirmAction={setConfirmAction} />
       </>
     );
   }

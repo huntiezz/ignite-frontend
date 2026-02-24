@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo, act } from 'react';
 import { useChannelContext } from '../../contexts/ChannelContext.jsx';
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '../ui/context-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import GuildMemberContextMenu, { KickBanDialog } from '../GuildMember/GuildMemberContextMenu.jsx';
+import GuildMemberContextMenu from '../GuildMember/GuildMemberContextMenu.jsx';
 import GuildMemberPopoverContent from '../GuildMember/GuildMemberPopoverContent.jsx';
 import UserProfileModal from '../UserProfileModal.jsx';
 import Avatar from '../Avatar.jsx';
@@ -22,7 +22,6 @@ const StatusBadge = ({ status, className = '' }) => {
 const MemberListItem = ({ member }) => {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null);
   const userFromStore = useUsersStore((state) => state.users[member.user.id]);
   const status = userFromStore?.status ?? member.user.status;
 
@@ -67,7 +66,6 @@ const MemberListItem = ({ member }) => {
               setPopoverOpen(false);
               setProfileModalOpen(true);
             }}
-            onConfirmAction={setConfirmAction}
           />
         </ContextMenuContent>
       </ContextMenu>
@@ -90,7 +88,6 @@ const MemberListItem = ({ member }) => {
         open={profileModalOpen}
         onOpenChange={setProfileModalOpen}
       />
-      <KickBanDialog user={member.user} confirmAction={confirmAction} setConfirmAction={setConfirmAction} />
     </Popover>
   );
 };

@@ -9,6 +9,7 @@ import App from './App';
 import api from './api';
 import './css/style.css';
 import { Toaster } from './components/ui/sonner';
+import { ModalRoot } from './store/modal.store';
 
 import { useEffect } from 'react';
 import { useLocation, useNavigationType } from 'react-router-dom';
@@ -124,6 +125,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <div className="flex min-h-0 flex-1 flex-col">
         <BrowserRouter>
           <App />
+          <ModalRoot />
           <Toaster />
           <RouteLogger />
         </BrowserRouter>

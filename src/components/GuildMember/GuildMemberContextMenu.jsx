@@ -24,9 +24,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../ui/dialog';
 import { useGuildsStore } from '../../store/guilds.store';
 import { useRolesStore } from '../../store/roles.store';
 import { useGuildContext } from '../../contexts/GuildContext';
+import { useModalStore } from '../../store/modal.store';
 import { RolesService } from '../../services/roles.service';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Permissions } from '@/constants/Permissions';
@@ -34,6 +42,25 @@ import { useHasPermission } from '@/hooks/useHasPermission';
 
 const intToHex = (intColor) => {
   return `#${intColor.toString(16).padStart(6, '0')}`;
+};
+
+const highlightJson = (obj) => {
+  const raw = JSON.stringify(obj, null, 2);
+  const escaped = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return escaped.replace(
+    /("(\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
+    (match) => {
+      let cls = 'text-emerald-400';
+      if (/^"/.test(match)) {
+        cls = /:$/.test(match) ? 'text-blue-400' : 'text-amber-300';
+      } else if (/true|false/.test(match)) {
+        cls = 'text-purple-400';
+      } else if (/null/.test(match)) {
+        cls = 'text-red-400';
+      }
+      return `<span class="${cls}">${match}</span>`;
+    }
+  );
 };
 
 const DELETE_MESSAGE_OPTIONS = [
@@ -48,26 +75,23 @@ const DELETE_MESSAGE_OPTIONS = [
 
 /**
  * Confirmation dialog for kick/ban actions.
- * Must be rendered OUTSIDE ContextMenuContent so it persists after the menu closes.
+ * Pushed via useModalStore.push(KickBanDialog, { user, guildId, action }).
  */
-export const KickBanDialog = ({ user, confirmAction, setConfirmAction }) => {
-  const { guildId } = useGuildContext();
+export const KickBanDialog = ({ modalId, user, guildId, action }) => {
   const [reason, setReason] = useState('');
   const [deleteSeconds, setDeleteSeconds] = useState('0');
-  const isBan = confirmAction === 'ban';
+  const isBan = action === 'ban';
 
   if (!user) return null;
 
   const handleClose = (open) => {
     if (!open) {
-      setConfirmAction(null);
-      setReason('');
-      setDeleteSeconds('0');
+      useModalStore.getState().close(modalId);
     }
   };
 
   return (
-    <AlertDialog open={confirmAction !== null} onOpenChange={handleClose}>
+    <AlertDialog open onOpenChange={handleClose}>
       <AlertDialogContent className={isBan ? '!max-w-md' : undefined}>
         <AlertDialogHeader>
           <AlertDialogTitle>
@@ -131,7 +155,38 @@ export const KickBanDialog = ({ user, confirmAction, setConfirmAction }) => {
   );
 };
 
-const GuildMemberContextMenu = ({ user, onViewProfile, onConfirmAction }) => {
+/**
+ * Debug info dialog for a guild member.
+ * Pushed via useModalStore.push(MemberDebugDialog, { user, guildId }).
+ */
+export const MemberDebugDialog = ({ modalId, user, guildId }) => {
+  const getUser = useUsersStore((s) => s.getUser);
+  const guildMembers = useGuildsStore((s) => s.guildMembers);
+
+  const storeUser = user ? getUser(user.id) : null;
+  const member = user ? guildMembers[guildId]?.find((m) => m.user_id === user.id) : null;
+
+  if (!user) return null;
+
+  const debugData = { user: storeUser || null, member: member || null };
+
+  return (
+    <Dialog open onOpenChange={() => useModalStore.getState().close(modalId)}>
+      <DialogContent className="flex max-h-[80vh] flex-col sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Member Debug Info</DialogTitle>
+          <DialogDescription>{user.name || user.username}</DialogDescription>
+        </DialogHeader>
+        <pre
+          className="min-h-0 flex-1 overflow-auto rounded-md bg-black/40 p-4 text-xs leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: highlightJson(debugData) }}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const GuildMemberContextMenu = ({ user, onViewProfile }) => {
   const currentUser = useUsersStore((s) => s.getCurrentUser());
   const navigate = useNavigate();
   const { friends, requests } = useFriendsStore();
@@ -303,7 +358,7 @@ const GuildMemberContextMenu = ({ user, onViewProfile, onConfirmAction }) => {
       {canKickMember && (
         <ContextMenuItem
           className="text-[#f23f42] focus:bg-[#da373c] focus:text-white"
-          onSelect={() => onConfirmAction?.('kick')}
+          onSelect={() => useModalStore.getState().push(KickBanDialog, { user, guildId, action: 'kick' })}
         >
           Kick {user.username}
         </ContextMenuItem>
@@ -312,7 +367,7 @@ const GuildMemberContextMenu = ({ user, onViewProfile, onConfirmAction }) => {
       {canBanMember && (
         <ContextMenuItem
           className="text-[#f23f42] focus:bg-[#da373c] focus:text-white"
-          onSelect={() => onConfirmAction?.('ban')}
+          onSelect={() => useModalStore.getState().push(KickBanDialog, { user, guildId, action: 'ban' })}
         >
           Ban {user.username}
         </ContextMenuItem>
@@ -330,6 +385,10 @@ const GuildMemberContextMenu = ({ user, onViewProfile, onConfirmAction }) => {
         <span className="ml-auto flex h-[18px] items-center rounded-[3px] bg-[#b5bac1] px-1 text-[10px] font-bold leading-none text-[#111214]">
           ID
         </span>
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem onSelect={() => setTimeout(() => useModalStore.getState().push(MemberDebugDialog, { user, guildId }), 0)}>
+        Debug Info
       </ContextMenuItem>
     </>
   );

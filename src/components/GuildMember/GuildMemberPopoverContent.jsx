@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import UserProfileModal from '../UserProfileModal';
 import { KickBanDialog } from './GuildMemberContextMenu';
 import { useGuildContext } from '../../contexts/GuildContext';
+import { useModalStore } from '../../store/modal.store';
 import { useGuildsStore } from '../../store/guilds.store';
 import { useRolesStore } from '@/store/roles.store';
 import { Permissions } from '@/constants/Permissions';
@@ -22,7 +23,6 @@ const GuildMemberPopoverContent = ({ userId, onOpenProfile }) => {
   const currentUser = useUsersStore((s) => s.getCurrentUser());
   const navigate = useNavigate();
   const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null); // 'kick' | 'ban' | null
 
   const { friends, requests } = useFriendsStore();
   const { getUser } = useUsersStore();
@@ -159,8 +159,8 @@ const GuildMemberPopoverContent = ({ userId, onOpenProfile }) => {
     }
   };
 
-  const handleKick = () => setConfirmAction('kick');
-  const handleBan = () => setConfirmAction('ban');
+  const handleKick = () => useModalStore.getState().push(KickBanDialog, { user, guildId, action: 'kick' });
+  const handleBan = () => useModalStore.getState().push(KickBanDialog, { user, guildId, action: 'ban' });
 
   const handleBlock = () => {
     toast.info('Block feature coming soon!');
@@ -431,8 +431,6 @@ const GuildMemberPopoverContent = ({ userId, onOpenProfile }) => {
       {!onOpenProfile && (
         <UserProfileModal userId={userId} open={profileModalOpen} onOpenChange={setProfileModalOpen} />
       )}
-
-      <KickBanDialog user={user} confirmAction={confirmAction} setConfirmAction={setConfirmAction} />
     </>
   );
 };
