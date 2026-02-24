@@ -23,6 +23,8 @@ export type Invite = {
   expires_at?: string;
 };
 
+const pendingFetches = new Map<string, Promise<Invite>>();
+
 type InvitesStore = {
   invites: Record<string, Invite>;
 
@@ -46,11 +48,21 @@ export const useInvitesStore = create<InvitesStore>((set, get) => ({
     const existing = get().invites[code];
     if (existing) return existing;
 
-    const { data } = await api.get(`/invites/${code}`);
-    set((state) => ({
-      invites: { ...state.invites, [code]: data },
-    }));
-    return data;
+    const pending = pendingFetches.get(code);
+    if (pending) return pending;
+
+    const promise = api.get(`/invites/${code}`).then(({ data }) => {
+      set((state) => ({
+        invites: { ...state.invites, [code]: data },
+      }));
+      pendingFetches.delete(code);
+      return data;
+    }).catch((err) => {
+      pendingFetches.delete(code);
+      throw err;
+    });
+    pendingFetches.set(code, promise);
+    return promise;
   },
 
   removeInvite: (code) =>
